@@ -83,11 +83,11 @@ def zem_leave_add(request):
         form = LeaseAgreementForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, '✅ Договір успішно доданий!')
+            messages.success(request, '✅ Земельну ділянку успішно додано!')
             return redirect('land')  # назад до списку
     else:
         form = LeaseAgreementForm()
-    return render(request, 'land/zem_lease_add.html', {'form': form, 'title': 'Новий договір'})
+    return render(request, 'land/zem_lease_add.html', {'form': form, 'title': 'Нова земельна ділянка'})
 
 # редагування договору
 def zem_lease_edit(request, pk):
@@ -148,7 +148,7 @@ def zem_lease_delete(request, pk):
     next_url = request.GET.get('next')
     if next_url:
         return HttpResponseRedirect(next_url)
-    return redirect('zem_lease_result')
+    return redirect('land')
 
 # історія змін
 # порівняння рядків
@@ -664,155 +664,6 @@ def water(request):
         'search_query': search_query,
     })
 
-def water_export_excel(request):
-    # Створюємо новий Excel файл
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "Water"
-
-    # Заголовки
-    headers = ["№", "Кадастровий номер", "Площа, га", "Населений пункт", "Цільове призначення", "Угіддя", "Координати", "Користувач",
-               "Дата реєстрації", "Термін дії", "Відсоток", "Нормативна оцінка", "Примітка", "№ реєстру", "Назва паспорту",
-               "Площа, га", "Обєм при НПР", "Глибина, м", "Дата погодження", "Розробник", "Гідроспоруда", "номер акту", "Координати гідроспоруди"]
-    sheet.append(headers)
-    # Жирний стиль для заголовків
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-
-    # Дані з моделі
-    waters = LandPlot.objects.filter(category='H')
-    cadastr_number = request.GET.get("cadastr_number")
-    if cadastr_number:
-        waters = waters.filter(cadastr_number=cadastr_number)
-
-    area = request.GET.get("area")
-    if area:
-        try:
-            waters = waters.filter(area=float(area))
-        except ValueError:
-            pass
-
-    location = request.GET.get("location")
-    if location:
-        waters = waters.filter(location__icontains=location)
-
-    destination = request.GET.get("destination")
-    if destination:
-        waters = waters.filter(destination=destination)
-
-    land = request.GET.get("land")
-    if land:
-        waters = waters.filter(land=land)
-
-    coordinates = request.GET.get("coordinates")
-    if coordinates:
-        try:
-            waters = waters.filter(coordinates=float(coordinates))
-        except ValueError:
-            pass
-
-    owner_name = request.GET.get("owner_name")
-    if owner_name:
-        waters = waters.filter(owner_name__icontains=owner_name)
-
-    rent_start = request.GET.get("rent_start")
-    if rent_start:
-        try:
-            date_start = datetime.strptime(rent_start, '%Y-%m-%d').date()
-            waters = waters.filter(rent_start=date_start)
-        except ValueError:
-            pass
-
-    rent_end = request.GET.get("rent_end")
-    if rent_end:
-        try:
-            date_end = datetime.strptime(rent_end , '%Y-%m-%d').date()
-            waters = waters.filter(rent_end =date_end)
-        except ValueError:
-            pass
-
-    interest = request.GET.get("interest")
-    if interest:
-        try:
-            waters = waters.filter(interest=float(interest))
-        except ValueError:
-            pass
-
-    assessment = request.GET.get("assessment")
-    if assessment:
-        try:
-            waters = waters.filter(assessment=float(assessment))
-        except ValueError:
-            pass
-
-    date_approval = request.GET.get("date_approval")
-    if date_approval:
-        try:
-            date_approval = datetime.strptime(rent_end , '%Y-%m-%d').date()
-            waters = waters.filter(date_approval =date_approval)
-        except ValueError:
-            pass
-
-    gidr_constr = request.GET.get("gidr_constr")
-    if gidr_constr:
-        try:
-            waters = waters.filter(gidr_constr__icontains=gidr_constr)
-        except ValueError:
-            pass
-
-    gidr_number = request.GET.get("gidr_number")
-    if gidr_number:
-        try:
-            waters = waters.filter(gidr_number__icontains=gidr_number)
-        except ValueError:
-            pass
-
-    gidr_coordinates = request.GET.get("gidr_coordinates")
-    if gidr_coordinates:
-        try:
-            waters = waters.filter(gidr_coordinates__icontains=gidr_coordinates)
-        except ValueError:
-            pass
-
-
-    for num, plot in enumerate(waters, start=1):
-        sheet.append([
-            num,
-            plot.cadastr_number,
-            plot.area,
-            plot.location,
-            plot.get_destination_display(),
-            plot.get_land_display(),
-            plot.coordinates,
-            plot.owner_name,
-            plot.rent_start.strftime('%d.%m.%Y') if plot.rent_start else '',
-            plot.rent_end.strftime('%d.%m.%Y') if plot.rent_end else '',
-            plot.interest,
-            plot.assessment,
-            plot.notes,
-            plot.pass_number,
-            plot.pass_name,
-            plot.pass_area,
-            plot.pass_volume,
-            plot.pass_depth,
-            plot.date_approval.strftime('%d.%m.%Y') if plot.date_approval else '',
-            plot.pass_developer,
-            plot.get_gidr_constr_display(),
-            plot.gidr_number,
-            plot.gidr_coordinates
-        ])
-        for column_cells in sheet.columns:
-            length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
-            sheet.column_dimensions[column_cells[0].column_letter].width = length + 2
-    # Відповідь
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    )
-    response['Content-Disposition'] = 'attachment; filename=waters.xlsx'
-    workbook.save(response)
-    return response
-
-
 # вільні земельні ділянки
 def freeland(request):
     land_plots = LandPlot.objects.filter(status='1')
@@ -1094,9 +945,6 @@ def status_layer_view(request):
         return JsonResponse({"type": "FeatureCollection", "features": features}, safe=False)
     except Exception as e:
         return JsonResponse({'error': f'Помилка сервера: {str(e)}'}, status=500)
-
-
-
 
 def category_layer_view(request):
     bbox = request.GET.get('bbox')

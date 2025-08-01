@@ -4,9 +4,6 @@ from .views import weather_view
 from .views import map_view
 from .views import landplots_geojson
 
-
-
-
 urlpatterns = [
     path('', views.index, name='home'),
     path('zem_lease/', views.zem_lease, name='zem_lease'),
@@ -16,7 +13,6 @@ urlpatterns = [
     path('zem_lease/auction', views.auction, name='auction'),
     path('zem_lease/permanent_land', views.permanent_land, name='permanent_land'),
     path('zem_lease/water', views.water, name='water'),
-    path('export/landplots/water', views.water_export_excel, name='water_export'),
     path('zem_lease/add/', views.zem_leave_add, name='zem_lease_add'),
     path('zem_lease/edit/<int:pk>/', views.zem_lease_edit, name='zem_lease_edit'),
     path('zem_lease/delete/<int:pk>/', views.zem_lease_delete, name='zem_lease_delete'),
