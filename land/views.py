@@ -142,14 +142,12 @@ def zem_lease_filter(request):
 def zem_lease_delete(request, pk):
     lease = get_object_or_404(LandPlot, pk=pk)
     lease.delete()
-    messages.success(request, '❌ Договір успішно видалено!')
+    messages.success(request, '❌ Земельна ділянка успішно видалена!')
 
     # Повертаємось на сторінку, з якої прийшов запит (з фільтрами і сторінкою)
-    referer = request.META.get('HTTP_REFERER')
-    if referer:
-        return HttpResponseRedirect(referer)
-
-    # Fallback — якщо щось пішло не так
+    next_url = request.GET.get('next')
+    if next_url:
+        return HttpResponseRedirect(next_url)
     return redirect('zem_lease_result')
 
 # історія змін
@@ -186,172 +184,6 @@ def zem_lease_history(request, pk):
     return render(request, 'land/zem_lease_history.html', {
         'history': history_with_changes
     })
-
-# експорт в Excel
-
-
-def export_excel(request):
-    print("=== Виклик export_excel ===")
-    print(f"GET-параметри: {request.GET}")
-    print(f"POST-дані: {request.POST}")
-
-    # Копіюємо параметри, обробляємо geom_filter
-    params = request.POST or request.GET
-    params = params.copy()
-    if 'geom_filter' in params and params['geom_filter'] == '':
-        params['geom_filter'] = None
-
-    # Ініціалізація форми
-    filter_form = LeaseFilterForm(params, queryset=LandPlot.objects.all())
-    if not filter_form.is_valid():
-        print(f"Помилки форми: {filter_form.errors}")
-        return HttpResponse(f"Помилка у формі: {filter_form.errors}", status=400)
-
-    # Дебаг: виведення очищених даних форми
-    print("Очищені дані форми:", filter_form.cleaned_data)
-    print("SQL-запит:", str(filter_form.qs.query))
-
-    # Отримання відфільтрованого QuerySet
-    landplots = filter_form.qs
-    print(f"Кількість відфільтрованих ділянок: {landplots.count()}")
-    print(f"Фільтровані ділянки (ID): {[plot.id for plot in landplots]}")
-    print(f"Усі ділянки в базі: {LandPlot.objects.count()}")
-    # Дебаг: виведення відфільтрованих даних
-    filtered_data = landplots.values(
-        'id', 'cadastr_number', 'location', 'area', 'owner_name', 'category',
-        'destination', 'rent_start', 'rent_end', 'interest', 'assessment', 'land', 'notes'
-    )
-    print("Відфільтровані дані:", list(filtered_data))
-
-    # Створення Excel
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "LandPlots"
-
-    headers = ["№", "Кадастровий номер", "Населений пункт", "Площа, га", "Користувач",
-               "Категорія", "Цільове призначення", "Дата реєстрації", "Термін дії",
-               "Відсоток", "Нормативна оцінка", "Угіддя", "Примітка"]
-    sheet.append(headers)
-
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-        # Запис відфільтрованих даних
-        for num, plot in enumerate(landplots, start=1):
-            sheet.append([
-                num,
-                plot.cadastr_number or '',
-                plot.location or '',
-                plot.area if plot.area is not None else '',
-                plot.owner_name or '',
-                plot.get_category_display() or '',
-                plot.get_destination_display() or '',
-                plot.rent_start.strftime('%d.%m.%Y') if plot.rent_start else '',
-                plot.rent_end.strftime('%d.%m.%Y') if plot.rent_end else '',
-                plot.interest if plot.interest is not None else '',
-                plot.assessment if plot.assessment is not None else '',
-                plot.get_land_display() or '',
-                plot.notes or '',
-            ])
-
-        # Налаштування ширини колонок
-        for column_cells in sheet.columns:
-            length = max(len(str(cell.value or '')) for cell in column_cells)
-            sheet.column_dimensions[column_cells[0].column_letter].width = length + 2
-            # Збереження і повернення файлу
-            output_file = os.path.join(settings.MEDIA_ROOT, 'landplots.xlsx')
-            workbook.save(output_file)
-            with open(output_file, 'rb') as f:
-                response = HttpResponse(
-                    f.read(),
-                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-                response['Content-Disposition'] = 'attachment; filename="landplots.xlsx"'
-                return response
-
-
-def export_json(request):
-    # Отримання всіх даних із моделі
-    all_data = LandPlot.objects.all().values('id', 'pass_name', 'status', 'owner_name', 'rent_start', 'rent_end', 'area_min', 'area_max')
-    df = pd.DataFrame(all_data)
-
-    # Перетворення полів дат у datetime
-    if not df.empty:
-        df['rent_start'] = pd.to_datetime(df['rent_start'], errors='coerce')
-        df['rent_end'] = pd.to_datetime(df['rent_end'], errors='coerce')
-
-    # Дебаг: виведення всіх даних і унікальних значень
-    print("Всі дані перед фільтрацією:", df.to_dict(orient='records'))
-    print("Кількість записів до фільтрації:", len(df))
-    print("Унікальні значення owner_name:", df['owner_name'].unique().tolist())
-    print("Унікальні значення status:", df['status'].unique().tolist())
-    print("Унікальні значення rent_start:", df['rent_start'].dt.strftime('%Y-%m-%d').unique().tolist())
-    print("Унікальні значення rent_end:", df['rent_end'].dt.strftime('%Y-%m-%d').unique().tolist())
-
-    # Отримуємо параметри фільтрації з POST або GET
-    status_value = request.POST.get('status', request.GET.get('status', ''))
-    owner_name_value = request.POST.get('owner_name', request.GET.get('owner_name', ''))
-    rent_start_min = request.POST.get('rent_start_min', request.GET.get('rent_start_min', ''))
-    rent_start_max = request.POST.get('rent_start_max', request.GET.get('rent_start_max', ''))
-    rent_end_min = request.POST.get('rent_end_min', request.GET.get('rent_end_min', ''))
-    rent_end_max = request.POST.get('rent_end_max', request.GET.get('rent_end_max', ''))
-    area_min = request.POST.get('area_min', request.GET.get('area_min', ''))
-    area_max = request.POST.get('area_max', request.GET.get('area_max', ''))
-
-    # Дебаг: виведення параметрів фільтрації
-    print("Параметри фільтрації:", {
-        'status': status_value,
-        'owner_name': owner_name_value,
-        'rent_start_min': rent_start_min,
-        'rent_start_max': rent_start_max,
-        'rent_end_min': rent_end_min,
-        'rent_end_max': rent_end_max
-    })
-
-    # Фільтрація даних
-    filtered_df = df
-    if status_value:
-        filtered_df = filtered_df[
-            filtered_df['status'].str.strip().str.lower().str.contains(status_value.strip().lower(), na=False)]
-    if owner_name_value:
-        filtered_df = filtered_df[
-            filtered_df['owner_name'].str.strip().str.lower().str.contains(owner_name_value.strip().lower(), na=False)]
-
-
-    # Фільтрація за діапазоном дат
-    try:
-        if rent_start_min:
-            rent_start_min = datetime.strptime(rent_start_min.strip(), '%d.%m.%Y').date()
-            filtered_df = filtered_df[filtered_df['rent_start'] >= rent_start_min]
-        if rent_start_max:
-            rent_start_max = datetime.strptime(rent_start_max.strip(), '%d.%m.%Y').date()
-            filtered_df = filtered_df[filtered_df['rent_start'] <= rent_start_max]
-        if rent_end_min:
-            rent_end_min = datetime.strptime(rent_end_min.strip(), '%d.%m.%Y').date()
-            filtered_df = filtered_df[filtered_df['rent_end'] >= rent_end_min]
-        if rent_end_max:
-            rent_end_max = datetime.strptime(rent_end_max.strip(), '%d.%m.%Y').date()
-            filtered_df = filtered_df[filtered_df['rent_end'] <= rent_end_max]
-        if area_min:
-            filtered_df = filtered_df[filtered_df['area'] >= float(area_min)]
-        if area_max:
-            filtered_df = filtered_df[filtered_df['area'] <= float(area_max)]
-
-    except ValueError as e:
-        print(f"Помилка формату дати: {e}")
-        return HttpResponse(f"Помилка: Некоректний формат дати. Використовуйте DD.MM.YYYY.", status=400)
-
-    # Дебаг: виведення відфільтрованих даних
-    filtered_data = filtered_df.to_dict(orient='records')
-    print("Відфільтровані дані:", filtered_data)
-    print("Кількість записів після фільтрації:", len(filtered_data))
-
-    # Експорт у JSON
-    json_path = os.path.join(settings.MEDIA_ROOT, 'filtered_data.json')
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(filtered_data, f, ensure_ascii=False, indent=4)
-
-    # Повертаємо відповідь
-    return HttpResponse(f"JSON-файл створено: {json_path}")
 
 # імпортування з Excel
 
@@ -728,6 +560,8 @@ def land_export(request):
         ("Користувач", lambda plot, num: plot.owner_name),
         ("Категорія", lambda plot, num: plot.get_category_display()),
         ("Цільове призначення", lambda plot, num: plot.get_destination_display()),
+        ("Номер рішення", lambda plot, num: plot.decision_number),
+        ("Дата рішення", lambda plot, num: plot.decision_date.strftime('%d.%m.%Y') if plot.decision_date else ''),
         ("Дата реєстрації", lambda plot, num: plot.rent_start.strftime('%d.%m.%Y') if plot.rent_start else ''),
         ("Термін дії", lambda plot, num: plot.rent_end.strftime('%d.%m.%Y') if plot.rent_end else ''),
         ("Відсоток", lambda plot, num: plot.interest),

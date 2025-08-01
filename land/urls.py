@@ -10,10 +10,8 @@ from .views import landplots_geojson
 urlpatterns = [
     path('', views.index, name='home'),
     path('zem_lease/', views.zem_lease, name='zem_lease'),
-    path('export/landplots/', views.export_excel, name='export_landplots'),
     path('zem_lease/land', views.all_land, name='land'),
     path('export/landplots/land_export', views.land_export, name='land_export'),
-    path('export/landplots/land_json', views.export_json, name='land_json'),
     path('zem_lease/freeland', views.freeland, name='freeland'),
     path('zem_lease/auction', views.auction, name='auction'),
     path('zem_lease/permanent_land', views.permanent_land, name='permanent_land'),

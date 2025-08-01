@@ -1,0 +1,10 @@
+diff a/zemres/settings.py b/zemres/settings.py	(rejected hunks)
+@@ -91,7 +91,7 @@ DATABASES = {
+         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+         'NAME': 'land_draft',
+         'USER': 'vasiliy',
+-        'PASSWORD': config('DB_PASSWORD'),
++        'PASSWORD': '1234',
+         'HOST': 'localhost',
+         'PORT': '5432',
+     }
