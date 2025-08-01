@@ -1,0 +1,116 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block main %}
+
+{% if weather %}
+  <div class="weather-details">
+    <div class="weather-block">
+      <h2>{{ weather.city }}</h2>
+      <p>
+        <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="icon">
+        {{ weather.description | title }}
+      </p>
+      <p>Температура: {{ weather.temperature }}°C (відчувається як {{ weather.feels_like }}°C)</p>
+      <p>Вологість: {{ weather.humidity }}%</p>
+      <p>Тиск: {{ weather.pressure }} hPa</p>
+      <p>Вітер: {{ weather.wind_speed }} м/с</p>
+      <p>Хмарність: {{ weather.clouds }}%</p>
+    </div>
+  </div>
+{% else %}
+  <!-- Можеш вивести повідомлення або просто нічого -->
+  <!-- <p>Погода недоступна</p> -->
+{% endif %}
+
+<div class="container mt-5 ">
+    <div class="row">
+        <div class="col-md-3 mb-5 me-5">
+            <div class="bg-light border">
+                <a href="{% url 'map' %}" class="text-decoration-none">
+                    <div class="card border-info bg-warning" style="width: 18rem;">
+                     <img src="{% static 'media/land_2.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                      <div class="mx-auto text-success-emphasis">
+                          <h6 class="">Мапа Жашкова</h6>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    <div class="row">
+        <div class="col-md-3 mb-5 me-5">
+            <div class="bg-light border">
+                <a href="{% url 'land' %}" class="text-decoration-none">
+                    <div class="card border-info bg-warning" style="width: 18rem;">
+                     <img src="{% static 'media/land_2.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                      <div class="mx-auto text-success-emphasis">
+                          <h6 class="">Земельні ділянки</h6>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 mb-5 me-5">
+            <div class="bg-light">
+                <a href="{% url 'zem_lease' %}" class="text-decoration-none">
+                    <div class="card border-info bg-warning" style="width: 18rem;">
+                     <img src="{% static 'media/land_1.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                      <div class="mx-auto text-success-emphasis">
+                          <h6 class="">Договір оренди</h6>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 mb-5">
+            <div class="bg-light border">
+                <a href="{% url 'permanent_land' %}" class="text-decoration-none">
+                    <div class="card border-info bg-warning" style="width: 18rem;">
+                     <img src="{% static 'media/land_3.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                      <div class="mx-auto text-success-emphasis">
+                          <h6 class="">Власність та постійне користування</h6>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3 me-5">
+            <div class="bg-light border">
+                <a href="{% url 'water' %}" class="text-decoration-none">
+                    <div class="card border-info bg-warning" style="width: 18rem;">
+                     <img src="{% static 'media/water.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                      <div class="mx-auto text-success-emphasis">
+                          <h6 class="">Ставки</h6>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3 me-5">
+            <div class="bg-light border">
+                <a href="{% url 'auction' %}" class="text-decoration-none">
+                <div class="card border-info bg-warning" style="width: 18rem;">
+                 <img src="{% static 'media/land_5.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                  <div class="mx-auto text-success-emphasis">
+                      <h6 class="">Аукціони</h6>
+                  </div>
+                </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="bg-light border">
+                <a href="{% url 'freeland' %}" class="text-decoration-none">
+                    <div class="card border-info bg-warning" style="width: 18rem;">
+                     <img src="{% static 'media/land_4.jpg' %}" class="card-img-top" width="18" height="180" alt="Land">
+                      <div class="mx-auto text-success-emphasis">
+                          <h6 class="">Вільні земельні ділянки</h6>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

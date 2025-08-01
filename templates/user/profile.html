@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block title %}
+Кабінет користувача
+{% endblock %}
+
+{% block main %}
+<div style="text-align: start; margin-top: 50px;">
+    <div class="container">
+    <h1>Вітаємо, {{ user.username }}!</h1>
+    </div>
+    <div class="form form-section container border back d-flex pt-3">
+      <img class="bd-placeholder-img flex-shrink-0 me-2 rounded" width="64" height="64" src="{{ user.profile.img.url }}">
+      <p class="pb-3 mb-0 mt-3 ms-3 small lh-sm border-bottom">
+        <strong class="d-block text-gray-dark">{{ user.username }}</strong>
+      {% if user.email %}
+        <b>Email:</b>{{ user.email }}
+      {% endif %}
+      </p>
+    </div>  
+    <form method="post" enctype="multipart/form-data" class="form form-section container border back">
+      {% csrf_token %}
+      {{ updateUserForm }}
+      {{ profileForm.as_p }}
+      <button class="btn btn-danger" type="submit">Обновити</button>
+
+        <button type="submit" class="btn btn-danger">Вийти</button
+  </form>
+    <form method="post" action="{% url 'exit' %}">
+          {% csrf_token %}
+          <button class="btn text-light me-2"  type="submit" >Вийти</button>
+      </form>
+  </div>
+{% endblock %}

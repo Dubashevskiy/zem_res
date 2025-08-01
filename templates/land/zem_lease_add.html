@@ -1,0 +1,190 @@
+{% extends 'layout.html' %}
+{% block main %}
+{% if form.errors %}
+  <div class="alert alert-danger">
+    <strong>Помилки:</strong>
+    <ul>
+      {% for field in form %}
+        {% for error in field.errors %}
+          <li>{{ field.label }}: {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+<div class="container mt-4 bg-light">
+  <h2>Додати земельну ділянку</h2>
+  <form method="post" novalidate>
+    {% csrf_token %}
+<h5>Інформація про земельну ділянку</h5>
+      <div class="mb-3">
+        {{ form.cadastr_number.label_tag }}
+        {{ form.cadastr_number }}
+      </div>
+      <div class="mb-3">
+          {{ form.location.label_tag }}
+          {{ form.location }}
+            {% for error in form.location.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.area.label_tag }}
+        {{ form.area }}
+            {% for error in form.area.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.category.label_tag }}
+        {{ form.category }}
+            {% for error in form.category.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.destination.label_tag }}
+        {{ form.destination }}
+            {% for error in form.destination.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.land.label_tag }}
+        {{ form.land }}
+            {% for error in form.land.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.coordinates.label_tag }}
+        {{ form.coordinates }}
+      </div>
+      <div class="mb-3">
+          {{ form.assessment.label_tag }}
+          {{ form.assessment }}
+        </div>
+
+      <div class="mb-3">
+          {{ form.notes.label_tag }}
+          {{ form.notes }}
+      </div>
+      <div class="mb-3">
+        {{ form.status.label_tag }}
+        {{ form.status }}
+            {% for error in form.status.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+      </div>
+        <div class="mb-3">
+          {{ form.has_passport.label_tag }}
+          {{ form.has_passport }}
+        </div>
+      <h5>Рішення</h5>
+      <div class="mb-3">
+          {{ form.decision_number.label_tag }}
+          {{ form.decision_number }}
+      </div>
+            <div class="mb-3">
+          {{ form.decision_date.label_tag }}
+          {{ form.decision_date }}
+      </div>
+
+      <div id="user_info" style="display: none;">
+        <h5>Інформація про користувача</h5>
+          <div class="mb-3">
+          {{ form.owner_name.label_tag }}
+          {{ form.owner_name }}
+        </div>
+        <div class="mb-3">
+          {{ form.rent_start.label_tag }}
+          {{ form.rent_start }}
+        </div>
+        <div class="mb-3">
+          {{ form.rent_end.label_tag }}
+          {{ form.rent_end }}
+        </div>
+        <div class="mb-3">
+          {{ form.interest.label_tag }}
+          {{ form.interest }}
+        </div>
+        <div class="mb-3">
+          {{ form.registered.label_tag }}
+          {{ form.registered }}
+        </div>
+          <div class="mb-3">
+          {{ form.suborendar.label_tag }}
+          {{ form.suborendar }}
+          </div>
+      </div>
+      <div id="suborendar" style="display: none;">
+          <h5>Суборенда</h5>
+           <div class="mb-3">
+          {{ form.sub_owner_name.label_tag }}
+          {{ form.sub_owner_name }}
+        </div>
+        <div class="mb-3">
+          {{ form.sub_rent_start.label_tag }}
+          {{ form.sub_rent_start }}
+        </div>
+        <div class="mb-3">
+          {{ form.sub_rent_end.label_tag }}
+          {{ form.sub_rent_end }}
+        </div>
+      </div>
+      <div id="water_passport" style="display: none;">
+          <h5>Паспорт водного обєкта</h5>
+        <div class="mb-3">
+          {{ form.pass_number.label_tag }}
+          {{ form.pass_number }}
+        </div>
+        <div class="mb-3">
+          {{ form.pass_name.label_tag }}
+          {{ form.pass_name }}
+        </div>
+        <div class="mb-3">
+          {{ form.pass_area.label_tag }}
+          {{ form.pass_area }}
+        </div>
+        <div class="mb-3">
+          {{ form.pass_volume.label_tag }}
+          {{ form.pass_volume }}
+        </div>
+        <div class="mb-3">
+          {{ form.pass_depth.label_tag }}
+          {{ form.pass_depth }}
+        </div>
+        <div class="mb-3">
+          {{ form.date_approval.label_tag }}
+          {{ form.date_approval }}
+        </div>
+        <div class="mb-3">
+          {{ form.pass_developer.label_tag }}
+          {{ form.pass_developer }}
+        </div>
+        <h5>Гідроспоруда</h5>
+          <div class="mb-3">
+            {{ form.gidr_constr.label_tag }}
+            {{ form.gidr_constr }}
+          </div>
+        </div>
+        <div id="hydro_structure" style="display: none;">
+          <div class="mb-3">
+            {{ form.gidr_number.label_tag }}
+            {{ form.gidr_number }}
+          </div>
+          <div class="mb-3">
+            {{ form.gidr_coordinates.label_tag }}
+            {{ form.gidr_coordinates }}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Зберегти</button>
+        <a href="{% url 'land' %}" class="btn btn-danger">Скасувати</a>
+  </form>
+</div>
+
+{% endblock %}

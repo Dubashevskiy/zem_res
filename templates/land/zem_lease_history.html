@@ -1,0 +1,48 @@
+{% extends 'layout.html' %}
+{% block main %}
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Дата</th>
+      <th>Тип зміни</th>
+      <th>Користувач</th>
+      <th>Зміни</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for record, changes in history %}
+    <tr>
+      <td>{{ record.history_date|date:"d.m.Y H:i" }}</td>
+      <td>
+        {% if record.history_type == '+' %}
+          Створено
+        {% elif record.history_type == '~' %}
+          Змінено
+        {% elif record.history_type == '-' %}
+          Видалено
+        {% endif %}
+      </td>
+      <td>
+        {% if record.history_user %}
+          {{ record.history_user.username }}
+        {% else %}
+          (невідомо)
+        {% endif %}
+      </td>
+      <td>
+        {% if changes %}
+          <ul>
+            {% for name, old, new in changes %}
+              <li><strong>{{ name }}:</strong> "{{ old }}" → "{{ new }}"</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          Без змін
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{% url 'zem_lease' %}" class="btn btn-secondary">⬅ Назад до списку</a>
+{% endblock %}

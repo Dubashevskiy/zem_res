@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+{% block main %}
+    {% if messages %}
+      {% for message in messages %}
+         <div class="alert alert-success w-100 text-success"
+            style="background-color: #d4edda; border: 1px solid #c3e6cb;"
+            role="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+<div class="m-4">
+<h2>Попередній перегляд</h2>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" name="preview" class="btn btn-primary">Попередній перегляд</button>
+</form>
+</div>
+<div class="m-4">
+<h2>Імпорт Excel</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Імпортувати</button>
+</form>
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+{% block main %}
+<div class="container mt-4">
+    <h2>Редагувати запис</h2>
+    <div class="mt-3 d-flex gap-2">
+        <a href="{% url 'water' %}" class="btn btn-primary">Повернутися назад</a>
+        <a href="{% url 'water_delete' lease.pk %}" class="btn btn-danger"
+           onclick="return confirm('Ви впевнені, що хочете видалити цей запис?');">
+            🗑️ Видалити
+        </a>
+        <a href="{% url 'water_history' lease.pk %}" class="btn btn-secondary">
+            📜 Історія змін
+        </a>
+    </div>
+  <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Зберегти</button>
+  </form>
+
+</div>
+{% endblock %}

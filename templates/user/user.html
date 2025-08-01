@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}
+Сторінка авторизації
+{% endblock %}
+
+
+{% block main %}
+<div class="container ">
+<h1>Сторінка авторизації</h1>
+</div>
+<div class="container mt-3">
+<form method="post" class="form form-control container border back ">
+    {% csrf_token %}
+    {% for field in form %}
+        <div class="">
+            <label for="{{ field.id_for_label }}" class="form form-label">{{ field.label }}</label>
+            <div class="mb-3">{{ field }}</div>
+            {% if field.errors %}
+                <div class="text-danger">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+    <button class="btn btn-danger" type="submit">Увійти</button>
+    <hr>
+    <p>Забули пароль? <a href="{% url 'pass_reset' %}">Отримати новий</a></p>
+</form>
+</div>
+<div class="container">
+<h1>{{ title }}</h1>
+</div>
+{% endblock %}
+

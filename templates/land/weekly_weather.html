@@ -1,0 +1,53 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block main %}
+
+<h1>Погода на 7 днів</h1>
+
+<form method="get">
+    <input type="text" name="city" placeholder="Введіть місто" required>
+    <button type="submit">Показати</button>
+</form>
+
+{% if forecast %}
+    <h2 class="text-center">{{ city }}</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        {% for day in forecast %}
+            <div style="border: 1px solid #ddd; border-radius: 10px; padding: 10px; width: 130px; text-align: center;">
+                <strong>{{ day.date }}</strong><br>
+                <img src="https://openweathermap.org/img/wn/{{ day.icon }}@2x.png" alt="icon" style="width: 80px;" /><br>
+                🌞 {{ day.temp_day }}°C<br>
+                🌙 {{ day.temp_night }}°C<br>
+                <small>{{ day.description }}</small>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>Прогноз не знайдено. Перевірте правильність назви міста.</p>
+{% endif %}
+
+<h1>Погода на тиждень у {{ city }}</h1>
+
+{% if forecast %}
+    <ul>
+        {% for day in forecast %}
+        <li>
+            {{ day.date }} — вдень: {{ day.temp_day }}°C, вночі: {{ day.temp_night }}°C, {{ day.description }}
+            <img src="https://openweathermap.org/img/wn/{{ day.icon }}@2x.png" alt="icon">
+        </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Дані про погоду не знайдені або помилка при завантаженні.</p>
+{% endif %}
+
+<h2>DEBUG DATA</h2>
+<pre>{{ debug|default:"No debug data" }}</pre>
+
+<h2>Debug Geo:</h2>
+<pre>{{ debug_geo|safe }}</pre>
+
+<h2>Debug Weather:</h2>
+<pre>{{ debug_weather|safe }}</pre>
+
+{% endblock %}

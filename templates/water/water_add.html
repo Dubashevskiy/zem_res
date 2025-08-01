@@ -1,0 +1,127 @@
+{% extends 'layout.html' %}
+{% block main %}
+{% if form.errors %}
+  <div class="alert alert-danger">
+    <strong>Помилки:</strong>
+    <ul>
+      {% for field in form %}
+        {% for error in field.errors %}
+          <li>{{ field.label }}: {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+<div class="container mt-4 bg-light">
+  <h2>Додати договір оренди</h2>
+  <form method="post">
+    {% csrf_token %}
+      <div class="mb-3">
+        {{ form.cadastr_number.label_tag }}
+        {{ form.cadastr_number }}
+      </div>
+    <div class="mb-3">
+        {{ form.area.label_tag }}
+        {{ form.area }}
+      </div>
+      <div class="mb-3">
+        {{ form.location.label_tag }}
+        {{ form.location }}
+      </div>
+      <div class="mb-3">
+        {{ form.destination.label_tag }}
+        {{ form.destination }}
+      </div>
+    <div class="mb-3">
+        {{ form.land.label_tag }}
+        {{ form.land }}
+      </div>
+      <div class="mb-3">
+        {{ form.coordinates.label_tag }}
+        {{ form.coordinates }}
+      </div>
+    <h5>Користувач</h5>
+      <div class="mb-3">
+        {{ form.owner_name.label_tag }}
+        <input id="id_owner_name" name="owner_name" type="text" class="form-control border-primary-subtle" value="{{ request.GET.owner_name }}">
+      </div>
+
+      <div class="mb-3">
+        {{ form.rent_start.label_tag }}
+        {{ form.rent_start }}
+      </div>
+      <div class="mb-3">
+        {{ form.rent_end.label_tag }}
+        {{ form.rent_end }}
+      </div>
+      <div class="mb-3">
+        {{ form.interest.label_tag }}
+        {{ form.interest }}
+      </div>
+      <div class="mb-3">
+        {{ form.assessment.label_tag }}
+        {{ form.assessment }}
+      </div>
+
+      <div class="mb-3">
+        {{ form.notes.label_tag }}
+        {{ form.notes }}
+      </div>
+    <h5>Паспорт водного обєкта</h5>
+      <div class="mb-3">
+        {{ form.pass_number.label_tag }}
+        {{ form.pass_number }}
+      </div>
+      <div class="mb-3">
+        {{ form.pass_name.label_tag }}
+        {{ form.pass_name }}
+      </div>
+      <div class="mb-3">
+        {{ form.pass_area.label_tag }}
+        {{ form.pass_area }}
+      </div>
+      <div class="mb-3">
+        {{ form.pass_volume.label_tag }}
+        {{ form.pass_volume }}
+      </div>
+      <div class="mb-3">
+        {{ form.pass_depth.label_tag }}
+        {{ form.pass_depth }}
+      </div>
+      <div class="mb-3">
+        {{ form.date_approval.label_tag }}
+        {{ form.date_approval }}
+      </div>
+      <div class="mb-3">
+        {{ form.pass_developer.label_tag }}
+        {{ form.pass_developer }}
+      </div>
+        <button type="submit" class="btn btn-primary">Зберегти</button>
+        <a href="{% url 'water' %}" class="btn btn-danger">Скасувати</a>
+  </form>
+</div>
+
+<!-- Автозаповнення користувача-->
+<script>
+$(function() {
+  $("#id_owner_name").autocomplete({
+    source: function(request, response) {
+      $.ajax({
+        url: "{% url 'owner_autocomplete' %}",
+        data: {
+          term: request.term
+        },
+        success: function(data) {
+          var uniqueData = [...new Set(data)];
+          response(uniqueData);  // Відправляємо дані без додаткової фільтрації
+        }
+      });
+    },
+    minLength: 2
+  });
+});
+</script>
+{% endblock %}

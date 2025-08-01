@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block main %}
+
+
+<div class="weather-details">
+  <div class="weather-block">
+    <h2>{{ weather.city }}</h2>
+    <p>
+      <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="icon">
+      {{ weather.description | title }}
+    </p>
+      <p>Температура: {{ weather.temperature }}°C (відчувається як {{ weather.feels_like }}°C)</p>
+      <p>Вологість: {{ weather.humidity }}%</p>
+      <p>Тиск: {{ weather.pressure }} hPa</p>
+      <p>Вітер: {{ weather.wind_speed }} м/с</p>
+      <p>Хмарність: {{ weather.clouds }}%</p>
+  </div>
+</div>
+
+{% endblock %}

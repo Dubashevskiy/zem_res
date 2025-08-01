@@ -1,0 +1,18 @@
+{% for lease in leases %}
+    <div>
+        <strong>{{ lease.title }}</strong><br>
+        {{ lease.description }}
+    </div>
+{% empty %}
+    <p>Немає результатів.</p>
+{% endfor %}
+
+<div class="pagination">
+    {% for page_num in page_obj.paginator.page_range %}
+        {% if page_num == page_obj.number %}
+            <strong>{{ page_num }}</strong>
+        {% else %}
+            <a href="?page={{ page_num }}">{{ page_num }}</a>
+        {% endif %}
+    {% endfor %}
+</div>

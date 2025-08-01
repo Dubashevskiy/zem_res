@@ -1,0 +1,303 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block main %}
+
+<div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                      {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+     {% endfor %}
+     {% endif %}
+</div>
+
+ <div class="d-flex justify-content-between align-items-center flex-wrap "> <!-- Таблиця результатів -->
+     <div class="d-flex align-items-center gap-2 flex-wrap">
+     <!-- <a href="{% url 'zem_lease_add' %}" class="btn btn-outline-success m-2">➕ Додати земельну ділянку</a> -->
+     <button class="btn btn-outline-success m-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar" aria-controls="filterSidebar">Фільтр</button>
+     <form method="post" action="{% url 'land_export' %}?{{ request.GET.urlencode }}">
+        {% csrf_token %}
+        <button type="submit" name="export_excel" value="export" class="btn btn-outline-success m-2">Експорт в Excel</button>
+     </form>
+     <!-- <a href="{% url 'import_landplots_excel' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success m-2">Імпортувати з Excel</a> -->
+     </div>
+<h3 class="text-primary fs-4 fst-italic"> Ділянки, висталені на аукціон </h3>
+     <div class="d-flex align-items-center gap-2 flex-wrap mt-2 mt-md-0 me-4">
+         <form method="get" class=" d-flex align-items-center gap-2 search">
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Пошук.." class="d-inline form-control" >
+                <button type="submit" class="btn btn-outline-success m-2" >
+                Пошук</button>
+                 {% if search_query %}
+                    <a href="{% url 'zem_lease' %}" class="btn btn-outline-secondary">Очистити</a>
+                {% endif %}
+         </form>
+     </div>
+
+ </div>
+
+<div  class="table-wrapper">
+
+  <table id="searchTable" border="1" class="table table-striped table-light tbody table-bordered sticky-header table-hover clickable-table" data-url-prefix="zem_lease">
+
+      <thead class="table-primary text-center">
+            <tr>
+                <th onclick="sortTable(0)">№</th>
+                <th onclick="sortTable(1)">Кадастровий номер</th>
+                <th onclick="sortTable(2)">Населений пункт</th>
+                <th onclick="sortTable(3)">Площа, га</th>
+                <th onclick="sortTable(6)">Категорія</th>
+                <th onclick="sortTable(7)">Цільове призначення</th>
+                <th onclick="sortTable(11)">Норм. оцінка</th>
+                <th onclick="sortTable(12)">Угіддя</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for lease in page_obj %}
+                    <tr class="table-striped tbody" data-id="{{ lease.id }}" >
+                        <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                        <td><a href="{% url 'map' %}?cadastr={{ lease.cadastr_number }}" target="_blank" rel="noopener noreferrer">
+                            {{ lease.cadastr_number }}
+                        </a></td>
+                        <td>{{ lease.location }}</td>
+                        <td>{{ lease.area }}</td>
+                        <td>{{ lease.get_category_display }}</td>
+                        <td>{{ lease.get_destination_display }}</td>
+                        <td>{{ lease.assessment }}</td>
+                        <td>{{ lease.get_land_display }}</td>
+                        <td class="col-details">
+                        {% if lease.sub_owner_name %}
+                            <button type="button" class="btn btn-sm btn-danger mb-1" onclick="subshowDetails(
+                                        '{{ lease.sub_owner_name }}',
+                                        '{{ lease.sub_rent_start }}',
+                                        '{{ lease.sub_rent_end }}', this)"
+                                      >
+                                  Суборенда</button>
+                        {% endif %}
+                        {% if lease.pass_number or lease.pass_name or lease.pass_area or lease.pass_volume or lease.pass_depth or lease.date_approval or lease.pass_developer %}
+                                 <button type="button" class="btn btn-sm btn-primary mb-1" onclick="showDetails(
+                                        '{{ lease.pass_number }}',
+                                        '{{ lease.pass_name }}',
+                                        '{{ lease.pass_area }}',
+                                        '{{ lease.pass_volume }}',
+                                        '{{ lease.pass_depth }}',
+                                        '{{ lease.date_approval }}',
+                                        '{{ lease.pass_developer }}', this)"
+                                      >
+                                  Паспорт</button>
+                        {% endif %}
+                        {% if lease.notes %}
+                              <button type="button" class="btn btn-sm btn-success" onclick="notesshowDetails('{{ lease.notes }}', this)">
+                                  Примітка</button>
+                        </td>
+                            {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="15">Немає записів</td>
+                    </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+<!-- Панель паспорта водного обєкта-->
+        <div id="sidePanel" class="side-panel">
+          <h4>Паспорт водного об'єкта</h4>
+          <table>
+            <tbody>
+              <tr>
+                <th>Номер реєстру</th>
+                <td id="passNumber"></td>
+              </tr>
+              <tr>
+                <th>Назва паспорту</th>
+                <td id="passName"></td>
+              </tr>
+              <tr>
+                <th>Площа, га</th>
+                <td id="passArea"></td>
+              </tr>
+              <tr>
+                <th>Об'єм при НПР</th>
+                <td id="passVolume"></td>
+              </tr>
+              <tr>
+                <th>Глибина, м</th>
+                <td id="passDepth"></td>
+              </tr>
+              <tr>
+                <th>Дата погодження</th>
+                <td id="passApproval"></td>
+              </tr>
+              <tr>
+                <th>Розробник</th>
+                <td id="passDeveloper"></td>
+              </tr>
+            </tbody>
+          </table>
+          <button onclick="hidePanel()" class="btn btn-danger mt-2">Закрити</button>
+        </div>
+    <!-- Панель суборенди-->
+        <div id="subsidePanel" class="side-panel">
+          <h4>Суборенда</h4>
+          <table>
+            <tbody>
+              <tr>
+                <th>Суборендар</th>
+                <td id="subOwner"></td>
+              </tr>
+              <tr>
+                <th>Дата реєстрації</th>
+                <td id="subRentStart"></td>
+              </tr>
+              <tr>
+                <th>Термін дії</th>
+                <td id="subRentEnd"></td>
+              </tr>
+            </tbody>
+          </table>
+          <button onclick="hidePanel()" class="btn btn-danger mt-2">Закрити</button>
+        </div>
+</div>
+
+<!-- Панель примітка-->
+        <div id="notessidePanel" class="side-panel">
+          <h4>Примітка</h4>
+          <table>
+            <tbody>
+              <tr>
+                <th>Примітка</th>
+                <td id="notes"></td>
+              </tr>
+            </tbody>
+          </table>
+          <button onclick="hidePanel()" class="btn btn-danger mt-2">Закрити</button>
+        </div>
+
+<!-- пагінація-->
+{% with query_params=request.GET.urlencode %}
+<div class="pagination">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page=1">« Перша</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.previous_page_number }}">‹ Назад</a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?{{ query_params }}&page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.next_page_number }}">Вперед ›</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.paginator.num_pages }}">Остання »</a>
+            </li>
+        {% endif %}
+    </ul>
+</div>
+{% endwith %}
+  <!-- Форма фільтра -->
+     <div class="offcanvas  offcanvas-width offcanvas-end w-50" tabindex="-1" id="filterSidebar" aria-labelledby="filterSidebarLabel">
+          <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title " id="filterSidebarLabel">Фільтр</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрити"></button>
+          </div>
+         <div class="offcanvas-body bg-light">
+             <form id="filter-form" method="get" class="row">
+                 <div class="col-md-6 ">
+                     {{ filter.form.owner_name.label_tag }}
+                     {{ filter.form.owner_name }}
+                 </div>
+                 <div class="col-md-6 mt-2">
+                    {{ filter.form.cadastr_number.label_tag }}
+                    <input id="id_cadastr_number" name="cadastr_number" type="text" class="form-control border-primary-subtle" value="{{ request.GET.cadastr_number }}">
+                </div>
+                 <div class="col-md-6 mt-3">
+                    {{ filter.form.location.label_tag }}
+                     <input id="id_location" name="location" type="text" class="form-control border-primary-subtle" value="{{ request.GET.location }}">
+                </div>
+                 <div class="col-md-6 mt-3">
+                    {{ filter.form.category.label_tag }}
+                    {{ filter.form.category }}
+                </div>
+                 <div class="col-md-12 mt-3">
+                    {{ filter.form.destination.label_tag }}
+                    {{ filter.form.destination }}
+                </div>
+                 <div class="col-md-12 mt-3">
+                    {{ filter.form.land.label_tag }}
+                    {{ filter.form.land }}
+                </div>
+                 <div class="col-md-3 mt-3">
+                    {{ filter.form.area.label_tag }}
+                    {{ filter.form.area }}
+                </div>
+                 <div class="col-md-3 mt-3">
+                    {{ filter.form.interest.label_tag }}
+                    {{ filter.form.interest }}
+                </div>
+
+                 <div class="col-md-3 mt-3">
+                    {{ filter.form.rent_start.label_tag }}
+                    {{ filter.form.rent_start}}
+                </div>
+                 <div class="col-md-3 mt-3">
+                     {{ filter.form.rent_end.label_tag }}
+                     {{ filter.form.rent_end }}
+                </div>
+                 <hr class="mt-3" style="border: 1px solid black">
+                 <div class="col-md-3">
+                    {{ filter.form.status.label_tag }}
+                    {{ filter.form.status }}
+                </div>
+                 <div class="col-md-3">
+                    {{ filter.form.assess_filter.label_tag }}
+                    {{ filter.form.assess_filter }}
+                </div>
+                 <div class="col-md-3">
+                    {{ filter.form.inter_filter.label_tag }}
+                    {{ filter.form.inter_filter }}
+                </div>
+                 <div class="col-md-3">
+                    {{ filter.form.registered.label_tag }}
+                    {{ filter.form.registered }}
+                </div>
+                 <div class="col-md-3">
+                    {{ filter.form.geom_filter.label_tag }}
+                    {{ filter.form.geom_filter }}
+                </div>
+                 <div class="col-md-3">
+                    {{ filter.form.suborendar.label_tag }}
+                    {{ filter.form.suborendar }}
+                </div>
+                 <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary">Застосувати</button>
+                    <a href="{% url 'auction' %}" class="btn btn-secondary">Очистити</a>
+                </div>
+            </form>
+        </div>
+     </div>
+
+<!-- Перевірка поля на некоретне значення -->
+<script>
+let filterResultUrl = "{% url 'zem_lease_result' %}"
+
+</script>
+
+
+<div id="filter-error" class="alert alert-danger d-none mt-2"></div>
+
+{% endblock %}

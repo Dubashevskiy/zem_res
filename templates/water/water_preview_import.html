@@ -1,0 +1,66 @@
+{% extends 'layout.html' %}
+{% block main %}
+    {% if messages %}
+      {% for message in messages %}
+         <div class="alert alert-success w-100 text-success"
+            style="background-color: #d4edda; border: 1px solid #c3e6cb;"
+            role="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+<h2>Попередній перегляд</h2>
+<table border="1">
+  <thead>
+    <tr>
+      <th>Кадастровий номер</th>
+      <th>Площа</th>
+      <th>Населений пункт</th>
+      <th>Цільове</th>
+      <th>Угіддя</th>
+      <th>Координати</th>
+      <th>Користувач</th>
+      <th>Реєстрація</th>
+      <th>Термін</th>
+      <th>Відсток</th>
+      <th>Нормативна</th>
+      <th>реєстр</th>
+      <th>назва</th>
+      <th>Площа</th>
+      <th>Обєм</th>
+      <th>Глибина</th>
+      <th>Дата</th>
+      <th>розробник</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in preview_data %}
+      <tr>
+        <td>{{ row.cadastr_number }}</td>
+        <td>{{ row.area }}</td>
+        <td>{{ row.location }}</td>
+        <td>{{ row.destination }}</td>
+        <td>{{ row.land }}</td>
+        <td>{{ row.coordinates }}</td>
+        <td>{{ row.owner_name }}</td>
+        <td>{{ row.rent_start }}</td>
+        <td>{{ row.rent_end }}</td>
+        <td>{{ row.interest }}</td>
+        <td>{{ row.assessment }}</td>
+        <td>{{ row.notes }}</td>
+        <td>{{ row.pass_number }}</td>
+        <td>{{ row.pass_name }}</td>
+        <td>{{ row.pass_area }}</td>
+        <td>{{ row.pass_volume }}</td>
+        <td>{{ row.pass_depth }}</td>
+        <td>{{ row.date_approval }}</td>
+        <td>{{ row.pass_developer }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" name="confirm">Підтвердити імпорт</button>
+</form>
+
+{% endblock %}
