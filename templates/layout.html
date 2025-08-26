@@ -46,6 +46,7 @@
 
 
             </div>
+            <button id="toggleTheme" class="btn btn-sm btn-outline-light">🌙 Темна тема</button>
             <div class="weather-header text-light d-flex align-items-center me-4">
                 {% if weather %}
                     <span><a href="{% url 'weather' %}" class="nav-link text-light me-4 ms-2">{{ weather.city }}</a></span>
@@ -75,7 +76,7 @@
         </div>
     </nav>
 </header>
-<div class="hbody">
+<div class="body">
     {% block main %}
   {% endblock %}
     </div>

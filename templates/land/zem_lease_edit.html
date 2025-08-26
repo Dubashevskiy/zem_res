@@ -19,11 +19,7 @@
 {% endif %}
     <h2>Редагувати запис</h2>
     <div class="mt-3 d-flex gap-2">
-          {% if query_params %}
-            <a href="{% url 'zem_lease_result' %}?{{ query_params }}" class="btn btn-secondary">↩️ Скасувати</a>
-          {% else %}
-            <a href="{% url 'zem_lease_result' %}" class="btn btn-secondary">↩️ Скасувати</a>
-          {% endif %}
+            <a href="{% url 'land' %}" class="btn btn-secondary">↩️ Скасувати</a>
         <a href="{% url 'zem_lease_delete' lease.pk %}" class="btn btn-danger"
            onclick="return confirm('Ви впевнені, що хочете видалити цей запис?');">
             🗑️ Видалити

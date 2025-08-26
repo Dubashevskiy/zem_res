@@ -9,12 +9,12 @@
 <h1>Сторінка авторизації</h1>
 </div>
 <div class="container mt-3">
-<form method="post" class="form form-control container border back ">
+<form method="post" class="form form-control container border ">
     {% csrf_token %}
     {% for field in form %}
         <div class="">
             <label for="{{ field.id_for_label }}" class="form form-label">{{ field.label }}</label>
-            <div class="mb-3">{{ field }}</div>
+            <div class="form mb-3">{{ field }}</div>
             {% if field.errors %}
                 <div class="text-danger">{{ field.errors }}</div>
             {% endif %}

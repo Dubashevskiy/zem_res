@@ -378,3 +378,77 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+// темна тема
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleButton = document.getElementById('toggleTheme');
+    const body = document.body;
+
+    // Завантаження теми з LocalStorage
+    if (localStorage.getItem('theme') === 'dark') {
+        body.classList.add('dark-theme');
+        toggleButton.textContent = '☀️ Світла тема';
+    } else {
+        toggleButton.textContent = '🌙 Темна тема';
+    }
+
+    toggleButton.addEventListener('click', () => {
+        body.classList.toggle('dark-theme');
+        const isDark = body.classList.contains('dark-theme');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        toggleButton.textContent = isDark ? '☀️ Світла тема' : '🌙 Темна тема';
+        updateMapTheme(); // Оновлення теми карти при кліку
+    });
+
+    // Виклик updateMapTheme після ініціалізації карти
+    waitForMapElements();
+});
+
+// Функція для очікування елементів карти
+function waitForMapElements() {
+    const checkElements = () => {
+        const layersControl = document.querySelector('.leaflet-control-layers');
+        const legend = document.querySelector('.legend');
+        const modal = document.querySelector('.modal-content');
+
+        if (layersControl && legend && modal) {
+            updateMapTheme(); // Викликаємо, коли всі елементи готові
+        } else {
+            setTimeout(checkElements, 100); // Перевіряємо кожні 100 мс
+        }
+    };
+    checkElements();
+}
+
+
+
+// Оновлення теми карти
+function updateMapTheme() {
+    const layersControl = document.querySelector('.leaflet-control-layers');
+    const legend = document.querySelector('.legend');
+    const body = document.body;
+    const modal = document.querySelector('.modal-content');
+
+    // Якщо елементи ще не готові, виходимо
+    if (!layersControl || !legend || !modal) return;
+
+    if (body.classList.contains('dark-theme')) {
+        // Темна тема
+        layersControl.style.background = '#474848';
+        layersControl.style.color = '#fff';
+        legend.style.background = '#474848';
+        legend.style.color = '#f1f1f1';
+        modal.style.backgroundColor = '#515156';
+    } else {
+        // Світла тема
+        layersControl.style.background = '#e3e3e5';
+        layersControl.style.color = '#000';
+        legend.style.background = '#ededf2';
+        legend.style.color = '#000';
+        modal.style.backgroundColor = '#f1f1f1';
+    }
+}
+
+// Виклик при завантаженні та перемиканні теми
+document.addEventListener('DOMContentLoaded', updateMapTheme);
+document.getElementById('toggleTheme').addEventListener('click', updateMapTheme);

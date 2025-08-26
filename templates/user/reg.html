@@ -6,13 +6,13 @@
 {% block main %}
 <div class="container">
 <h1>{{ title }}</h1>
-</div>
-<form method="post" class="form form-section container back border">
+<form method="post" class="form form-control container border">
     {% csrf_token %}
     {{ form.as_p }}
     <button class="btn btn-danger" type="submit">Зареєструватися</button>
     <hr>
     <p><a href="{% url 'user' %}">Увійти в особистий кабінет</a></p>
 </form>
+    </div>
 {% endblock %}
 

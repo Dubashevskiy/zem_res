@@ -765,7 +765,31 @@ def auction(request):
 
 # мапа Жашків
 def map_view(request):
-    return render(request, 'land/map.html', {'title': 'Мапа Жашкова'})
+    cadastr_number = request.GET.get('cadastr')  # Отримуємо кадастровий номер із URL
+    context = {
+        'title': 'Мапа Жашкова',
+        'cadastr_number': cadastr_number,  # Передаємо в шаблон
+    }
+    return render(request, 'land/map.html', context)
+
+
+def land_coords(request, cadastr):
+    try:
+        land = LandPlot.objects.get(cadastr_number=cadastr)
+
+        if land.geom:
+            return JsonResponse({
+                'type': 'Feature',
+                'geometry': json.loads(land.geom.geojson),  # <-- конвертуємо рядок у dict
+                'properties': {'cadastr_number': land.cadastr_number}
+            })
+        else:
+            return JsonResponse({'error': f'Geometry not set for {cadastr}'}, status=404)
+
+    except LandPlot.DoesNotExist:
+        return JsonResponse({'error': f'Land plot not found: {cadastr}'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 def landplots_geojson(request):
     bbox = request.GET.get('bbox')
@@ -809,9 +833,9 @@ def landplots_geojson(request):
                     "status": plot.status,
                     "status_display": plot.get_status_display() if plot.status else None,
                     "category": plot.category,
+                    "rent_end": plot.rent_end,
                     "category_display": plot.get_category_display() if plot.category else None,
                     "sub_owner_name": plot.sub_owner_name
-
                 }
             })
 
@@ -859,7 +883,7 @@ def search_landplot(request):
                         "status": landplot.status,
                         "status_display": landplot.get_status_display() if landplot.status else None,
                         "category": landplot.category,
-                        "category_display": landplot.get_category_display() if landplot.category else None
+                       "category_display": landplot.get_category_display() if landplot.category else None
                     }
                 }, safe=False)
             except LandPlot.DoesNotExist:
@@ -937,7 +961,9 @@ def status_layer_view(request):
                     "destination": land.get_destination_display() if land.destination else None,
                     "owner_name": land.owner_name or None,
                     "category": land.category or None,
-                    "category_display": land.get_category_display() if land.category else None
+                    "category_display": land.get_category_display() if land.category else None,
+                    "sub_owner_name": land.sub_owner_name or None,
+                    "rent_end": land.rent_end
                 }
             })
         if not features:
@@ -971,13 +997,17 @@ def category_layer_view(request):
                 "type": "Feature",
                 "geometry": geom,
                 "properties": {
-                    "cadastr_number": land.cadastr_number,
-                    "category": land.category,
-                    "category_display": land.get_category_display(),
+                    "cadastr_number": land.cadastr_number or None,
+                    "status": land.status or None,
+                    "status_display": land.get_status_display() if land.status else None,
                     "area": float(land.area) if land.area else None,
-                    "location": land.location,
+                    "location": land.location or None,
                     "destination": land.get_destination_display() if land.destination else None,
-                    "owner_name": land.owner_name
+                    "owner_name": land.owner_name or None,
+                    "category": land.category or None,
+                    "category_display": land.get_category_display() if land.category else None,
+                    "sub_owner_name": land.sub_owner_name or None,
+                    "rent_end": land.rent_end,
                 }
             })
         return JsonResponse({"type": "FeatureCollection", "features": features}, safe=False)

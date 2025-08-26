@@ -91,8 +91,10 @@
     <script>
         const ZHASHKIV_GEOJSON_URL = "{% static 'geo/Zhashkiv.geojson' %}";
         const ZHASH_TG_GEOJSON_URL = "{% static 'geo/Zhash_TG.geojson' %}";
-
     </script>
+        <script>
+    const cadastrNumber = "{{ cadastr_number|escapejs }}";
+</script>
     <script src="{% static 'js/map.js' %}"></script>
 </body>
 </html>

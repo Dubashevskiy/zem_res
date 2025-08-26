@@ -15,10 +15,12 @@
     </ul>
   </div>
 {% endif %}
-<div class="container mt-4 bg-light">
+<div class="container mt-4">
   <h2>Додати земельну ділянку</h2>
   <form method="post" novalidate>
     {% csrf_token %}
+      <button type="submit" class="btn btn-primary me-3">Зберегти</button>
+      <a href="{% url 'land' %}" class="btn btn-danger">Скасувати</a>
 <h5>Інформація про земельну ділянку</h5>
       <div class="mb-3">
         {{ form.cadastr_number.label_tag }}
@@ -181,8 +183,7 @@
             {{ form.gidr_coordinates }}
           </div>
         </div>
-
-        <button type="submit" class="btn btn-primary">Зберегти</button>
+        <button type="submit" class="btn btn-primary me-3">Зберегти</button>
         <a href="{% url 'land' %}" class="btn btn-danger">Скасувати</a>
   </form>
 </div>

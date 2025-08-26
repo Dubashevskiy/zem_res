@@ -1,5 +1,5 @@
-// Ініціалізація карти
-const map = L.map('map').setView([49.245, 30.110], 11); // Жашків
+// Ініціалізація карти один раз
+const map = L.map('map').setView([49.155, 30.110], 11); // Жашків
 
 // Базові шари
 const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -16,196 +16,6 @@ const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.pn
     maxZoom: 17,
     attribution: '© OpenTopoMap'
 });
-
-// Завантаження zhashkivTGLayer із локального файлу
-function loadZhashkivTGLayer() {
-    console.log("Запуск loadZhashkivTGLayer");
-    fetch('/static/geo/Zhash_TG.geojson') // Зміни шлях до файлу, якщо потрібно
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-            return response.json();
-        })
-        .then(data => {
-              if (!data || !data.type || data.type !== "FeatureCollection" || !data.features || data.features.length === 0) {
-                showMessage("Дані для шару 'Zhashkiv-TG' не знайдено");
-                zhashkivTGLayer.clearLayers();
-                return;
-            }
-            zhashkivTGLayer.clearLayers();
-            const newLayer = createLayer(data, function () {
-                return {
-                    color: '#7FFF00',
-                    fillColor: '#ff7800',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0
-                };
-            }, function (feature, layer) {
-                const props = feature.properties;
-                let info = `${feature.properties.locality || 'Невідомо'}<br>`;
-                if (props.name) info += `<b>Назва:</b> ${props.name}<br>`;
-                layer.bindPopup(info);
-            });
-            zhashkivTGLayer.addLayer(newLayer);
-            console.log("Додано новий шар до zhashkivTGLayer:", zhashkivTGLayer);
-        })
-        .catch(err => {
-            console.error("Помилка завантаження zhashkivTGLayer:", err);
-            showMessage(`Помилка завантаження шару 'Zhashkiv-TG': ${err.message}`);
-            zhashkivTGLayer.clearLayers();
-        });
-}
-
-// Завантаження zhashkivNPLayer із локального файлу
-function loadZhashkivNPLayer() {
-    console.log("Запуск loadZhashkivNPLayer");
-
-    // Ініціалізація layerGroup для підписів
-    if (!window.labelLayerGroup) {
-        window.labelLayerGroup = L.layerGroup().addTo(map);
-    }
-    const labelLayerGroup = window.labelLayerGroup;
-
-    // Очищаємо шар підписів перед завантаженням
-    labelLayerGroup.clearLayers();
-
-    fetch('/static/geo/Zhashkiv_NP.geojson')
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-            return response.json();
-        })
-        .then(data => {
-            if (!data || !data.type || data.type !== "FeatureCollection" || !data.features || data.features.length === 0) {
-                showMessage("Дані для шару 'Zhashkiv-NP' не знайдено");
-                zhashkivNPLayer.clearLayers();
-                labelLayerGroup.clearLayers();
-                return;
-            }
-
-            zhashkivNPLayer.clearLayers();
-
-            const newLayer = createLayer(data, function () {
-                return {
-                    color: '#EEDC82',
-                    fillColor: '#ff7800',
-                    weight: 3,
-                    opacity: 1,
-                    fillOpacity: 0
-                };
-            }, function (feature, layer) {
-                const props = feature.properties;
-                let info = `${props.locality || 'Невідомо'}<br>`;
-                if (props.name) info += `<b>Назва:</b> ${props.name}<br>`;
-                layer.bindPopup(info);
-
-                // Додаємо підпис для кожного контуру
-                if (props.locality) {
-                    let centroid;
-                    if (typeof turf !== 'undefined') {
-                        // Використовуємо turf.js, якщо доступно
-                        centroid = turf.centroid(feature).geometry.coordinates;
-                        centroid = [centroid[1], centroid[0]]; // [lat, lng]
-                    } else {
-                        // Альтернатива: використовуємо центр меж контуру
-                        centroid = layer.getBounds().getCenter();
-                        centroid = [centroid.lat, centroid.lng];
-                    }
-
-                    const label = L.marker(centroid, {
-                        icon: L.divIcon({
-                            className: 'custom-label',
-                            html: `<div>${props.locality}</div>`,
-                            iconSize: [100, 20],
-                            iconAnchor: [50, 10]
-                        }),
-                        interactive: false
-                    });
-                    labelLayerGroup.addLayer(label);
-                }
-            });
-
-            zhashkivNPLayer.addLayer(newLayer);
-            console.log("Додано новий шар до zhashkivNPLayer:", zhashkivNPLayer);
-
-            // Функція для керування видимістю підписів залежно від масштабу
-            function updateLabels() {
-                const zoom = map.getZoom();
-                if (zoom <= 13) {
-                    map.addLayer(labelLayerGroup);
-                } else {
-                    map.removeLayer(labelLayerGroup);
-                }
-            }
-
-            // Викликаємо при завантаженні шару
-            updateLabels();
-
-            // Оновлюємо підписи при зміні масштабу, уникаючи дублювання обробників
-            map.off('zoomend', updateLabels); // Видаляємо попередній обробник
-            map.on('zoomend', updateLabels);
-        })
-        .catch(err => {
-            console.error("Помилка завантаження zhashkivNPLayer:", err);
-            showMessage(`Помилка завантаження шару 'Zhashkiv-NP': ${err.message}`);
-            zhashkivNPLayer.clearLayers();
-            if (labelLayerGroup) {
-                labelLayerGroup.clearLayers();
-            }
-        });
-}
-
-// Накладні шари
-let geoLayer = L.markerClusterGroup().addTo(map); // Ділянки активні за замовчуванням
-let statusLayer = L.layerGroup();
-let categoryLayer = L.layerGroup();
-let zhashkivTGLayer = L.layerGroup().addTo(map); // Zhashkiv-TG активний за замовчуванням
-let zhashkivNPLayer = L.layerGroup().addTo(map); // Zhashkiv-NP активний за замовчуванням
-let searchLayer = L.geoJSON(null, {
-    style: { color: 'red', fillColor: 'red', weight: 4, fillOpacity: 0.7 }
-}).addTo(map); // searchLayer завжди активний
-
-// Колір для статусів
-const statusColors = {
-    '1': '#ff0000', // Вільна червоний
-    '2': '#FBEC5D', // Оренда жовтий
-    '3': '#00CED1', // Постійне користування голубий
-    '4': '#7FFF00', // Власність світло-зелений
-    '5': '#C71585'  // Аукціон
-};
-
-// Колір для категорій
-const categoryColors = {
-    'A': '#FBEC5D', // 100 Землі сільськогосподарського призначення жовтий
-    'B': '#00FFFF', // 200 Землі житлової та громадської забудови голубий
-    'C': '#8B008B', // 300 Землі природно-заповідного призначення фіолетовий
-    'D': '#C41E3A', // 400 Землі оздоровчого призначення червоний
-    'E': '#7FFF00', // 500 Землі рекреаційного призначення світло-зелений
-    'F': '#FF55A3', // 600 Землі історико-культурного призначення розовий
-    'G': '#228b22', // 700 Землі лісогосподарського призначення зелений
-    'H': '#1e90ff', // 800 Землі водного фонду синій
-    'I': '#FF8C00'  // 900 Землі промисловості та іншого призначення оранжевий
-};
-
-const statusLabels = {
-    '1': 'Вільна',
-    '2': 'Оренда',
-    '3': 'Постійне користування',
-    '4': 'Власність',
-    '5': 'Аукціон'
-};
-
-const categoryLabels = {
-    'A': 'Землі с/г призначення',
-    'B': 'Землі житлової та громадської забудови',
-    'C': 'Землі природно-заповідного призначення',
-    'D': 'Землі оздоровчого призначення',
-    'E': 'Землі рекреаційного призначення',
-    'F': 'Землі історико-культурного призначення',
-    'G': 'Землі лісогосподарського призначення',
-    'H': 'Землі водного фонду',
-    'I': 'Землі промисловості'
-};
-
 
 // Функція для створення шару
 function createLayer(data, style, onEachFeature) {
@@ -240,13 +50,196 @@ function debounce(func, wait) {
     };
 }
 
+// Завантаження zhashkivTGLayer із локального файлу
+const loadZhashkivTGLayer = debounce(function () {
+    console.log("Запуск loadZhashkivTGLayer");
+    fetch('/static/geo/Zhash_TG.geojson')
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+            return response.json();
+        })
+        .then(data => {
+            if (!data || !data.type || data.type !== "FeatureCollection" || !data.features || data.features.length === 0) {
+                showMessage("Дані для шару 'Zhashkiv-TG' не знайдено");
+                zhashkivTGLayer.clearLayers();
+                return;
+            }
+            zhashkivTGLayer.clearLayers();
+            const newLayer = createLayer(data, function () {
+                return {
+                    color: '#7FFF00',
+                    fillColor: '#ff7800',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0
+                };
+            }, function (feature, layer) {
+                const props = feature.properties;
+                let info = `${feature.properties.locality || 'Невідомо'}<br>`;
+                if (props.name) info += `<b>Назва:</b> ${props.name}<br>`;
+                layer.bindPopup(info);
+            });
+            zhashkivTGLayer.addLayer(newLayer);
+            console.log("Додано новий шар до zhashkivTGLayer:", zhashkivTGLayer);
+        })
+        .catch(err => {
+            console.error("Помилка завантаження zhashkivTGLayer:", err);
+            showMessage(`Помилка завантаження шару 'Zhashkiv-TG': ${err.message}`);
+            zhashkivTGLayer.clearLayers();
+        });
+}, 500);
+
+// Завантаження zhashkivNPLayer із локального файлу
+const loadZhashkivNPLayer = debounce(function () {
+    console.log("Запуск loadZhashkivNPLayer");
+    if (!window.labelLayerGroup) {
+        window.labelLayerGroup = L.layerGroup().addTo(map);
+    } else if (!map.hasLayer(window.labelLayerGroup)) {
+        window.labelLayerGroup.addTo(map);
+    }
+    const labelLayerGroup = window.labelLayerGroup;
+    labelLayerGroup.clearLayers();
+
+    fetch('/static/geo/Zhashkiv_NP.geojson')
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+            return response.json();
+        })
+        .then(data => {
+            if (!data || !data.type || data.type !== "FeatureCollection" || !data.features || data.features.length === 0) {
+                showMessage("Дані для шару 'Zhashkiv-NP' не знайдено");
+                zhashkivNPLayer.clearLayers();
+                labelLayerGroup.clearLayers();
+                return;
+            }
+
+            zhashkivNPLayer.clearLayers();
+
+            const newLayer = createLayer(data, function () {
+                return {
+                    color: '#EEDC82',
+                    fillColor: '#ff7800',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0
+                };
+            }, function (feature, layer) {
+                const props = feature.properties;
+                let info = `${props.locality || 'Невідомо'}<br>`;
+                if (props.name) info += `<b>Назва:</b> ${props.name}<br>`;
+                layer.bindPopup(info);
+
+                if (props.locality) {
+                    let centroid;
+                    if (typeof turf !== 'undefined') {
+                        centroid = turf.centroid(feature).geometry.coordinates;
+                        centroid = [centroid[1], centroid[0]];
+                    } else {
+                        console.warn("Бібліотека turf.js не підключена, використовується альтернативний метод для центроїда");
+                        try {
+                            centroid = layer.getBounds().getCenter();
+                            centroid = [centroid.lat, centroid.lng];
+                        } catch (e) {
+                            console.error("Не вдалося визначити центроїд для feature:", feature, e);
+                            return;
+                        }
+                    }
+
+                    const label = L.marker(centroid, {
+                        icon: L.divIcon({
+                            className: 'custom-label',
+                            html: `<div>${props.locality}</div>`,
+                            iconSize: [100, 20],
+                            iconAnchor: [50, 10]
+                        }),
+                        interactive: false
+                    });
+                    labelLayerGroup.addLayer(label);
+                }
+            });
+
+            zhashkivNPLayer.addLayer(newLayer);
+            console.log("Додано новий шар до zhashkivNPLayer:", zhashkivNPLayer);
+            updateLabels();
+        })
+        .catch(err => {
+            console.error("Помилка завантаження zhashkivNPLayer:", err);
+            showMessage(`Помилка завантаження шару 'Zhashkiv-NP': ${err.message}`);
+            zhashkivNPLayer.clearLayers();
+            if (labelLayerGroup) {
+                labelLayerGroup.clearLayers();
+            }
+        });
+}, 500);
+
+// Функція для керування видимістю підписів
+function updateLabels() {
+    const zoom = map.getZoom();
+    if (window.labelLayerGroup) {
+        if (zoom <= 13) {
+            map.addLayer(window.labelLayerGroup);
+        } else {
+            map.removeLayer(window.labelLayerGroup);
+        }
+    }
+}
+
+// Накладні шари
+let geoLayer = L.markerClusterGroup().addTo(map);
+let statusLayer = L.layerGroup();
+let categoryLayer = L.layerGroup();
+let zhashkivTGLayer = L.layerGroup().addTo(map);
+let zhashkivNPLayer = L.layerGroup().addTo(map);
+let searchLayer = L.geoJSON(null, {
+    style: { color: 'red', fillColor: 'red', weight: 4, fillOpacity: 0.7 }
+}).addTo(map);
+
+// Колір для статусів
+const statusColors = {
+    '1': '#ff0000',
+    '2': '#FBEC5D',
+    '3': '#00CED1',
+    '4': '#7FFF00',
+    '5': '#C71585'
+};
+
+// Колір для категорій
+const categoryColors = {
+    'A': '#FBEC5D',
+    'B': '#00FFFF',
+    'C': '#8B008B',
+    'D': '#C41E3A',
+    'E': '#7FFF00',
+    'F': '#FF55A3',
+    'G': '#228b22',
+    'H': '#1e90ff',
+    'I': '#FF8C00'
+};
+
+const statusLabels = {
+    '1': 'Вільна',
+    '2': 'Оренда',
+    '3': 'Постійне користування',
+    '4': 'Власність',
+    '5': 'Аукціон'
+};
+
+const categoryLabels = {
+    'A': 'Землі с/г призначення',
+    'B': 'Землі житлової та громадської забудови',
+    'C': 'Землі природно-заповідного призначення',
+    'D': 'Землі оздоровчого призначення',
+    'E': 'Землі рекреаційного призначення',
+    'F': 'Землі історико-культурного призначення',
+    'G': 'Землі лісогосподарського призначення',
+    'H': 'Землі водного фонду',
+    'I': 'Землі промисловості'
+};
+
 // Легенда
 const legendControl = L.control({ position: 'bottomright' });
 legendControl.onAdd = function (map) {
     const div = L.DomUtil.create('div', 'info legend');
-    div.style.backgroundColor = 'white';
-    div.style.padding = '10px';
-    div.style.border = '1px solid #ccc';
     div.innerHTML = '<h4>Легенда</h4>';
     return div;
 };
@@ -259,11 +252,7 @@ function updateLegend() {
         content += '<h5>Вид використання</h5>';
         Object.keys(statusColors).forEach(key => {
             content += `<i style="background:${statusColors[key]};width:18px;height:18px;display:inline-block;margin-right:5px;"></i> ${
-                key === '1' ? 'Вільна' :
-                key === '2' ? 'Оренда' :
-                key === '3' ? 'Постійне користування' :
-                key === '4' ? 'Власність' :
-                'Аукціон'
+                statusLabels[key]
             }<br>`;
         });
     }
@@ -271,15 +260,7 @@ function updateLegend() {
         content += '<h5>Категорія</h5>';
         Object.keys(categoryColors).forEach(key => {
             content += `<i style="background:${categoryColors[key]};width:18px;height:18px;display:inline-block;margin-right:5px;"></i> ${
-                key === 'A' ? 'Землі с/г призначення' :
-                key === 'B' ? 'Землі житлової забудови' :
-                key === 'C' ? 'Землі природо-заповідного фонду' :
-                key === 'D' ? 'Землі оздоровчого призначення' :
-                key === 'E' ? 'Землі рекреаційного призначення' :
-                key === 'F' ? 'Землі історико-культурного призначення' :
-                key === 'G' ? 'Землі лісогосподарського призначення' :
-                key === 'H' ? 'Землі водного фонду' :
-                'Землі промисловості'
+                categoryLabels[key]
             }<br>`;
         });
     }
@@ -289,39 +270,79 @@ function updateLegend() {
     legendDiv.innerHTML = content;
 }
 
+// Завантаження ділянок із кластерами
 const loadParcelsWithClusters = debounce(function () {
-    if (map.getZoom() < 14 || !map.hasLayer(geoLayer)) return;
-    const bounds = map.getBounds();
-    const bbox = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
-    const areaMin = parseFloat(document.getElementById('areaMin').value) || 0;
-    const areaMax = parseFloat(document.getElementById('areaMax').value) || Infinity;
-    const status = document.getElementById('statusFilter').value || '';
-    const category = document.getElementById('categoryFilter').value || '';
-
-
-    // Формуємо URL: якщо є status або category, ігноруємо bbox
-    let url = '/landplots/geojson/';
-    const params = [];
-    if (status) params.push(`status=${encodeURIComponent(status)}`);
-    if (category) params.push(`category=${encodeURIComponent(category)}`);
-    if (params.length > 0) {
-        url += `?${params.join('&')}`;
-    } else {
-        const bbox = map.getBounds().toBBoxString();
-        url += `?bbox=${bbox}`;
+    // Перевірка залежностей
+    if (typeof L === 'undefined') {
+        console.error("Leaflet.js не підключено");
+        showMessage("Помилка: Leaflet.js не підключено", "error");
+        return;
+    }
+    if (!map) {
+        console.error("map не ініціалізований");
+        showMessage("Помилка: map не ініціалізований", "error");
+        return;
+    }
+    if (!geoLayer) {
+        console.error("geoLayer не ініціалізований");
+        showMessage("Помилка: geoLayer не ініціалізований", "error");
+        return;
     }
 
-    console.log("URL запиту:", url); // Дебагінг
+    // Перевірка зуму та шару
+    if (map.getZoom() < 14 || !map.hasLayer(geoLayer)) return;
 
+    // Перевірка елементів DOM
+    const areaMinInput = document.getElementById('areaMin');
+    const areaMaxInput = document.getElementById('areaMax');
+    const statusFilter = document.getElementById('statusFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    if (!areaMinInput || !areaMaxInput || !statusFilter || !categoryFilter) {
+        console.error("Один або кілька елементів фільтрів не знайдено в DOM");
+        showMessage("Помилка: Елементи фільтрів не знайдено", "error");
+        return;
+    }
+
+    const areaMin = parseFloat(areaMinInput.value) || 0;
+    const areaMax = parseFloat(areaMaxInput.value) || Infinity;
+    const status = statusFilter.value || '';
+    const category = categoryFilter.value || '';
+
+    // Валідація статусу та категорії (якщо є statusLabels і categoryLabels)
+    const validStatuses = Object.keys(statusLabels || {});
+    const validCategories = Object.keys(categoryLabels || {});
+    if (status && !validStatuses.includes(status)) {
+        console.warn(`Некоректне значення статусу: ${status}`);
+        showMessage("Некоректне значення статусу", "error");
+        return;
+    }
+    if (category && !validCategories.includes(category)) {
+        console.warn(`Некоректне значення категорії: ${category}`);
+        showMessage("Некоректне значення категорії", "error");
+        return;
+    }
+
+    // Формування URL
+    const bounds = map.getBounds();
+    const bbox = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+    let url = '/landplots/geojson/';
+    const params = [`bbox=${encodeURIComponent(bbox)}`];
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (category) params.push(`category=${encodeURIComponent(category)}`);
+    url += `?${params.join('&')}`;
+
+    console.log("URL запиту:", url);
     fetch(url)
         .then(response => {
             if (!response.ok) throw new Error(`HTTP error ${response.status}`);
             return response.json();
         })
         .then(data => {
-            console.log("Отримані дані:", data); // Дебагінг
+            console.log("Отримані дані:", data);
             if (!data || !data.type || data.type !== "FeatureCollection" || !data.features || data.features.length === 0) {
                 showMessage("Ділянки не знайдено");
+                geoLayer.clearLayers();
                 return;
             }
             geoLayer.clearLayers();
@@ -332,26 +353,28 @@ const loadParcelsWithClusters = debounce(function () {
                     return area >= areaMin && area <= areaMax;
                 })
             };
-            console.log("Відфільтровані дані:", filteredData); // Дебагінг
+            console.log("Відфільтровані дані:", filteredData);
             const geoJsonLayer = L.geoJSON(filteredData, {
                 style: function (feature) {
                     return {
-                        fillColor:'#1E90FF',
+                        fillColor: '#1E90FF',
                         fillOpacity: 0.3,
                         color: '#1E90FF',
                         weight: 2
                     };
                 },
                 onEachFeature: function (feature, layer) {
-                    layer.bindPopup(`
-                        <b>Кадастровий номер:</b> ${feature.properties.cadastr_number || 'Невідомо'}<br>
-                        <b>Площа:</b> ${feature.properties.area != null ? feature.properties.area + ' га' : 'Невідомо'}<br>
-                        <b>Адреса:</b> ${feature.properties.location || 'Невідомо'}<br>
-                        <b>Категорія:</b> ${categoryLabels[feature.properties.category] || 'Невідомо'}<br>
-                        <b>Цільове призначення:</b> ${feature.properties.destination || 'Невідомо'}<br>
-                        <b>Користувач:</b> ${feature.properties.owner_name || 'Невідомо'}<br>
-                        <b>Користування:</b> ${statusLabels[feature.properties.status] || 'Невідомо'}<br>
-                    `);
+                    const props = feature.properties;
+                    let info = `<b>Кадастровий номер:</b> ${props.cadastr_number || 'Невідомо'}<br>`;
+                    if (props.area != null) info += `<b>Площа:</b> ${props.area} га<br>`;
+                    if (props.location) info += `<b>Адреса:</b> ${props.location}<br>`;
+                    if (props.category_display) info += `<b>Категорія:</b> ${props.category_display}<br>`;
+                    if (props.destination) info += `<b>Цільове призначення:</b> ${props.destination}<br>`;
+                    if (props.owner_name) info += `<b>Користувач:</b> ${props.owner_name}<br>`;
+                    if (props.sub_owner_name) info += `<b>Суборендар:</b> ${props.sub_owner_name}<br>`;
+                    if (props.rent_end) info += `<b>Термін дії:</b> ${props.rent_end}<br>`;
+                    if (props.status_display) info += `<b>Статус:</b> ${props.status_display}<br>`;
+                    layer.bindPopup(info);
                 }
             });
             geoLayer.addLayer(geoJsonLayer);
@@ -366,65 +389,13 @@ const loadParcelsWithClusters = debounce(function () {
             showMessage(`Помилка завантаження ділянок: ${err.message}`, "error");
         });
 }, 500);
-
-document.getElementById('categoryFilterBtn').addEventListener('click', () => {
-    const areaMin = parseFloat(document.getElementById('areaMin').value) || 0;
-    const areaMax = parseFloat(document.getElementById('areaMax').value) || Infinity;
-    if (areaMax < areaMin) {
-        showMessage("Максимальна площа не може бути меншою за мінімальну", "error");
-        return;
-    }
-    loadParcelsWithClusters();
-    const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
-    if (modal) modal.hide();
-});
-
-document.getElementById('statusFilterBtn').addEventListener('click', () => {
-    const areaMin = parseFloat(document.getElementById('areaMin').value) || 0;
-    const areaMax = parseFloat(document.getElementById('areaMax').value) || Infinity;
-    if (areaMax < areaMin) {
-        showMessage("Максимальна площа не може бути меншою за мінімальну", "error");
-        return;
-    }
-    loadParcelsWithClusters();
-    const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
-    if (modal) modal.hide();
-});
-
-document.getElementById('filterAreaBtn').addEventListener('click', () => {
-    const areaMin = parseFloat(document.getElementById('areaMin').value) || 0;
-    const areaMax = parseFloat(document.getElementById('areaMax').value) || Infinity;
-    if (areaMax < areaMin) {
-        showMessage("Максимальна площа не може бути меншою за мінімальну", "error");
-        return;
-    }
-    loadParcelsWithClusters();
-    const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
-    if (modal) modal.hide();
-});
-
-document.getElementById('resetBtn').addEventListener('click', () => {
-    searchLayer.clearLayers();
-    document.getElementById('areaMin').value = '';
-    document.getElementById('areaMax').value = '';
-    document.getElementById('searchInput').value = '';
-    document.getElementById('searchUserInput').value = '';
-    document.getElementById('statusFilter').value = '';
-    document.getElementById('categoryFilter').value = '';
-    loadParcelsWithClusters();
-    showMessage("Фільтр скинуто", "success");
-});
-
-
 // Завантаження statusLayer
 const loadStatusLayer = debounce(function () {
-    console.log("Запуск loadStatusLayer, statusLayer:", statusLayer);
-    if (map.getZoom() < 14 || !statusLayer || !map.hasLayer(statusLayer)) {
+    if (map.getZoom() < 14 || !map.hasLayer(statusLayer)) {
         console.log("statusLayer не активний, зум < 14 або statusLayer null");
         return;
     }
     const bounds = map.getBounds();
-    const status = document.getElementById('statusFilter').value || '';
     const bbox = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
     console.log("Завантаження statusLayer з bbox:", bbox);
     fetch(`/api/status_layer/?bbox=${bbox}`)
@@ -452,12 +423,14 @@ const loadStatusLayer = debounce(function () {
             }, function (feature, layer) {
                 const props = feature.properties;
                 let info = `<b>Кадастровий номер:</b> ${props.cadastr_number || 'Невідомо'}<br>`;
-                if (props.status_display) info += `<b>Статус:</b> ${props.status_display}<br>`;
                 if (props.area != null) info += `<b>Площа:</b> ${props.area} га<br>`;
                 if (props.location) info += `<b>Адреса:</b> ${props.location}<br>`;
+                if (props.category_display) info += `<b>Категорія:</b> ${props.category_display}<br>`;
                 if (props.destination) info += `<b>Цільове призначення:</b> ${props.destination}<br>`;
                 if (props.owner_name) info += `<b>Користувач:</b> ${props.owner_name}<br>`;
-                if (props.category_display) info += `<b>Категорія:</b> ${props.category_display}<br>`;
+                if (props.sub_owner_name) info += `<b>Суборендар:</b> ${props.sub_owner_name}<br>`;
+                if (props.rent_end) info += `<b>Термін дії:</b> ${props.rent_end}<br>`;
+                if (props.status_display) info += `<b>Статус:</b> ${props.status_display}<br>`;
                 layer.bindPopup(info);
             });
             statusLayer.addLayer(newLayer);
@@ -475,8 +448,7 @@ const loadStatusLayer = debounce(function () {
 // Завантаження categoryLayer
 const loadCategoryLayer = debounce(function () {
     document.getElementById('spinner').style.display = 'block';
-    console.log("Запуск loadCategoryLayer, categoryLayer:", categoryLayer);
-    if (map.getZoom() < 14 || !categoryLayer || !map.hasLayer(categoryLayer)) {
+    if (map.getZoom() < 14 || !map.hasLayer(categoryLayer)) {
         console.log("categoryLayer не активний, зум < 14 або categoryLayer null");
         return;
     }
@@ -489,7 +461,7 @@ const loadCategoryLayer = debounce(function () {
             return response.json();
         })
         .then(data => {
-            document.getElementById('spinner').style.display = 'none'; // Сховати спінер
+            document.getElementById('spinner').style.display = 'none';
             console.log("categoryLayer response:", data);
             if (!data || !data.type || data.type !== "FeatureCollection" || !data.features || data.features.length === 0) {
                 showMessage("Дані для шару 'Категорія' не знайдено");
@@ -504,16 +476,18 @@ const loadCategoryLayer = debounce(function () {
                     fillColor: categoryColors[feature.properties.category] || '#cccccc',
                     weight: 1,
                     opacity: 1,
-                    fillOpacity: 0.6 // Зменшено прозорість для categoryLayer
+                    fillOpacity: 0.6
                 };
             }, function (feature, layer) {
                 const props = feature.properties;
                 let info = `<b>Кадастровий номер:</b> ${props.cadastr_number || 'Невідомо'}<br>`;
-                if (props.category_display) info += `<b>Категорія:</b> ${props.category_display}<br>`;
                 if (props.area != null) info += `<b>Площа:</b> ${props.area} га<br>`;
                 if (props.location) info += `<b>Адреса:</b> ${props.location}<br>`;
+                if (props.category_display) info += `<b>Категорія:</b> ${props.category_display}<br>`;
                 if (props.destination) info += `<b>Цільове призначення:</b> ${props.destination}<br>`;
                 if (props.owner_name) info += `<b>Користувач:</b> ${props.owner_name}<br>`;
+                if (props.sub_owner_name) info += `<b>Суборендар:</b> ${props.sub_owner_name}<br>`;
+                if (props.rent_end) info += `<b>Термін дії:</b> ${props.rent_end}<br>`;
                 if (props.status_display) info += `<b>Статус:</b> ${props.status_display}<br>`;
                 layer.bindPopup(info);
             });
@@ -522,7 +496,7 @@ const loadCategoryLayer = debounce(function () {
             updateLegend();
         })
         .catch(err => {
-            document.getElementById('spinner').style.display = 'none'; // Сховати спінер
+            document.getElementById('spinner').style.display = 'none';
             console.error("Помилка завантаження categoryLayer:", err);
             showMessage(`Помилка завантаження шару 'Категорія': ${err.message}`);
             categoryLayer.clearLayers();
@@ -530,16 +504,20 @@ const loadCategoryLayer = debounce(function () {
         });
 }, 500);
 
-
-
 // Події карти
 map.on('moveend zoomend', function () {
-    loadParcelsWithClusters();
-    loadStatusLayer();
-    loadCategoryLayer();
-    loadZhashkivTGLayer();
-    loadZhashkivNPLayer();
+    Promise.all([
+        loadParcelsWithClusters(),
+        loadStatusLayer(),
+        loadCategoryLayer(),
+        loadZhashkivTGLayer(),
+        loadZhashkivNPLayer()
+    ]).catch(err => {
+        console.error("Помилка при масовому завантаженні шарів:", err);
+        showMessage("Помилка завантаження шарів", "error");
+    });
 });
+
 map.on('overlayadd', function (e) {
     console.log("Додано шар:", e.name);
     if (e.name === 'Ділянки') loadParcelsWithClusters();
@@ -547,23 +525,16 @@ map.on('overlayadd', function (e) {
     if (e.name === 'Категорія') loadCategoryLayer();
     updateLegend();
 });
+
 map.on('overlayremove', function (e) {
     console.log("Видалено шар:", e.name);
-    if (e.name === 'Ділянки') {
-        geoLayer.clearLayers();
-    }
-    if (e.name === 'Вид використання') {
-        statusLayer.clearLayers();
-        console.log("statusLayer очищено");
-    }
-    if (e.name === 'Категорія') {
-        categoryLayer.clearLayers();
-        console.log("categoryLayer очищено");
-    }
+    if (e.name === 'Ділянки') geoLayer.clearLayers();
+    if (e.name === 'Вид використання') statusLayer.clearLayers();
+    if (e.name === 'Категорія') categoryLayer.clearLayers();
     updateLegend();
 });
 
-// Контроль шарів із радіокнопками
+// Контроль шарів
 const baseMaps = {
     "OpenStreetMap": osmLayer,
     "Esri Satellite": esriSatellite,
@@ -573,9 +544,9 @@ const overlayMaps = {
     "Ділянки": geoLayer,
     "Вид використання": statusLayer,
     "Категорія": categoryLayer,
-    // searchLayer не додаємо, бо він завжди активний
 };
 L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
 // Робимо накладні шари радіокнопками
 const layerControl = document.querySelector('.leaflet-control-layers');
 layerControl.querySelectorAll('.leaflet-control-layers-overlays input[type=checkbox]').forEach(input => {
@@ -585,6 +556,44 @@ layerControl.querySelectorAll('.leaflet-control-layers-overlays input[type=check
 
 // Початкове завантаження
 loadParcelsWithClusters();
+loadZhashkivTGLayer();
+loadZhashkivNPLayer();
+
+function getQueryParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
+
+// Обробка кадастрового номера при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', function () {
+    const cadastr = getQueryParam('cadastr') || window.cadastrNumber;
+    if (cadastr) {
+        console.log('Cadastr number:', cadastr);
+        fetch(`/api/land/${encodeURIComponent(cadastr)}/`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('API response:', data);
+                if (!data.error) {
+                    const layer = L.geoJSON(data).addTo(map);
+                    map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 16 });
+                    layer.bindPopup(`Кадастровий номер: ${cadastr}`).openPopup();
+                } else {
+                    console.error('API error:', data.error);
+                    showMessage(`Помилка: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Помилка при отриманні даних:', error);
+                showMessage(`Помилка при завантаженні ділянки: ${error.message}`, 'error');
+            });
+    } else {
+        console.warn('No cadastr number provided');
+
+    }
+});
 
 // Пошук за кадастровим номером
 document.getElementById('searchBtn').addEventListener('click', () => {
@@ -677,7 +686,7 @@ document.getElementById('searchUserBtn').addEventListener('click', () => {
                     <b>Статус:</b> ${feature.properties.status_display || 'Невідомо'}<br>
                     <b>Категорія:</b> ${feature.properties.category_display || 'Невідомо'}
                 `);
-                 const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
+                const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
                 if (modal) modal.hide();
                 try {
                     boundsArray.push(layer.getBounds());
@@ -689,7 +698,6 @@ document.getElementById('searchUserBtn').addEventListener('click', () => {
                 const allBounds = boundsArray.reduce((acc, b) => acc.extend(b), boundsArray[0]);
                 map.fitBounds(allBounds);
             }
-
         })
         .catch(err => {
             console.error("Помилка пошуку ділянок за користувачем:", err);
@@ -697,35 +705,48 @@ document.getElementById('searchUserBtn').addEventListener('click', () => {
         });
 });
 
-function showMessage(message, type = 'info') {
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `map-message ${type}`;
-    msgDiv.textContent = message;
-    document.getElementById('map').appendChild(msgDiv);
-    setTimeout(() => msgDiv.remove(), 3000);
-}
-
-document.getElementById('filterAreaBtn').addEventListener('click', () => {
+// Об'єднана функція для фільтрів
+function applyFilters() {
     const areaMin = parseFloat(document.getElementById('areaMin').value) || 0;
     const areaMax = parseFloat(document.getElementById('areaMax').value) || Infinity;
     if (areaMax < areaMin) {
-        showMessage("Максимальна площа не може бути меншою за мінімальну");
+        showMessage("Максимальна площа не може бути меншою за мінімальну", "error");
         return;
     }
     loadParcelsWithClusters();
     const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
     if (modal) modal.hide();
+}
+
+document.getElementById('categoryFilterBtn').addEventListener('click', applyFilters);
+document.getElementById('statusFilterBtn').addEventListener('click', applyFilters);
+document.getElementById('filterAreaBtn').addEventListener('click', applyFilters);
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+    searchLayer.clearLayers();
+    document.getElementById('areaMin').value = '';
+    document.getElementById('areaMax').value = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchUserInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('categoryFilter').value = '';
+    loadParcelsWithClusters();
+    loadStatusLayer();
+    loadCategoryLayer();
+    loadZhashkivTGLayer();
+    loadZhashkivNPLayer();
+    showMessage("Фільтр скинуто", "success");
 });
 
 // Кастомний контрол для кнопки "Фільтри"
 L.Control.FilterButton = L.Control.extend({
     options: {
-        position: 'topleft' // Розташування кнопки (можна змінити на 'topright', 'bottomleft', 'bottomright')
+        position: 'topleft'
     },
     onAdd: function (map) {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
         const button = L.DomUtil.create('button', 'btn btn-primary filter-btn', container);
-        button.innerHTML = '<i class="bi bi-funnel"></i>'; // Іконка воронки
+        button.innerHTML = '<i class="bi bi-funnel"></i>';
         button.setAttribute('type', 'button');
         button.setAttribute('data-bs-toggle', 'modal');
         button.setAttribute('data-bs-target', '#filterModal');
@@ -738,5 +759,31 @@ L.Control.FilterButton = L.Control.extend({
     }
 });
 
-// Додаємо контрол на карту
 new L.Control.FilterButton().addTo(map);
+
+// Перевірка залежностей
+if (typeof L === 'undefined') {
+    console.error("Leaflet.js не підключено");
+    showMessage("Помилка: Leaflet.js не підключено", "error");
+    throw new Error("Leaflet.js is required");
+}
+if (typeof bootstrap === 'undefined') {
+    console.warn("Bootstrap не підключено, модальні вікна можуть не працювати");
+}
+
+// Функція для відображення повідомлень
+function showMessage(message, type = 'info') {
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+        console.error("Елемент #map не знайдено");
+        return;
+    }
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `map-message ${type}`;
+    msgDiv.textContent = message;
+    mapElement.appendChild(msgDiv);
+    setTimeout(() => msgDiv.remove(), 3000);
+}
+
+// Додаємо обробник для підписів
+map.on('zoomend', updateLabels);

@@ -28,4 +28,5 @@ urlpatterns = [
     path('api/search_landplot/', views.search_landplot, name='search_landplot'),
     path('api/status_layer/', views.status_layer_view, name='status_layer'),
     path('api/category_layer/', views.category_layer_view, name='category_layer'),
+    path('api/land/<str:cadastr>/', views.land_coords, name='land_coords'),
 ]
