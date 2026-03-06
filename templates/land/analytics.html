@@ -1,0 +1,332 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block main %}
+
+
+<!-- Фільтри -->
+<div class="container">
+    <h1>Аналітика земельних ділянок</h1>
+    <form method="GET" class="filter-form " action="{% url 'land_analytics' %}">
+    <div>
+        <label>Населений пункт:</label>
+        <input type="text" name="location" value="{{ filters.location }}">
+    </div>
+    <div>
+        <label>Тип користування:</label>
+                <select name="status">
+            <option value="">Усі</option>
+            {% for key, value in LandPlot.STATUS_CHOICES %}
+                <option value="{{ key }}" {% if filters.status == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Категорія:</label>
+        <select name="category">
+            <option value="">Усі</option>
+            {% for key, value in LandPlot.CATEGORY_CHOICES %}
+                <option value="{{ key }}" {% if filters.category == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Цільове призначення:</label>
+        <select name="destination">
+            <option value="">Усі</option>
+            {% for key, value in LandPlot.DESTINATION_CHOICES %}
+                <option value="{{ key }}" {% if filters.destination == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Тип угідь:</label>
+
+        <select name="land">
+            <option value="">Усі</option>
+            {% for key, value in LandPlot.LAND_CHOICES %}
+                <option value="{{ key }}" {% if filters.land == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="d-flex">
+        <button class="btn w-5 me-4" type="submit">Фільтрувати</button>
+        <a href="{% url 'land_analytics' %}" class="btn w-5 pt-2">Скинути фільтри</a>
+    </div>
+</form>
+
+
+<!-- Узагальнена інформація -->
+<h2>Узагальнена інформація</h2>
+<ul class="summary">
+    <li>Загальна кількість ділянок: {{ summary.total_plots }} (з них в оренді: {{ summary.rented_count }} ділянок ({{ summary.rented_percent|floatformat:2 }}%))</li>
+    <li>Загальна площа: {{ summary.total_area|floatformat:2 }} га</li>
+    <li>Середня площа ділянки: {{ summary.average_area|floatformat:2 }} га</li>
+    <li>Середній відсоток: {{ summary.average_interest|floatformat:2 }} % (враховано {{ summary.count_with_interest }} ділянок, що в оренді ({{ summary.coverage|floatformat:2 }} %), де вказано нормативна оцінка та %)</li>
+    <li>Найбільший відсоток: {{ summary.max_interest|floatformat:2 }} %</li>
+    <li>Найменший відсоток: {{ summary.min_interest|floatformat:2 }} %</li>
+    <li>Середній термін оренди: {{ summary.average_lease_duration|floatformat:1 }} років</li>
+    <li>Найбільший термін оренди: {{ summary.max_lease_duration|floatformat:1 }} років</li>
+    <li>Найменший термін оренди: {{ summary.min_lease_duration|floatformat:1 }} років</li>
+</ul>
+
+<!-- Таблиця за населеним пунктом -->
+{% if detailed_analytics %}
+    <h4>За категоріями</h4>
+       <table class="tables table_analitic">
+            <thead>
+                <tr>
+                    <th>Категорія</th>
+                    <th>Тип користування</th>
+                    <th>Кількість</th>
+                    <th>Площа</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, data in detailed_analytics.items %}
+                    {% for status, entries in data.statuses.items %}
+                        {% for entry in entries %}
+                            <tr>
+                                {% if forloop.first and forloop.parentloop.first %}
+                                    <!-- Додаємо Категорію лише для першого запису в першому статусі категорії -->
+                                    <td rowspan="{{ data.rowspan }}">{{ category }}</td>
+                                {% endif %}
+                                {% if forloop.first %}
+                                    <!-- Додаємо Тип користування лише для першого запису в статусі -->
+                                    <td rowspan="{{ entries|length }}">{{ status }}</td>
+                                {% endif %}
+                                <td>{{ entry.count }}</td>
+                                <td>{{ entry.total_area|floatformat:2 }}</td>
+
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                    <!-- Підсумковий рядок категорії -->
+                    <tr class="table-total">
+                        <td colspan="2"><strong>Всього по категорії: {{ category }}</strong></td>
+                        <td><strong>{{ data.total_count }}</strong></td>
+                        <td><strong>{{ data.total_area|floatformat:2 }}</strong></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    <!-- Графік (Chart.js) -->
+    <div class="chart-container">
+        <h2 class="chart">Розподіл площі за категоріями</h2>
+        <canvas id="categoryChart" class="chart-canvas"></canvas>
+    </div>
+
+<h2>За категоріями</h2>
+<table class="table_analitic">
+    <tr>
+        <th>Категорія</th>
+        <th>Кількість ділянок</th>
+        <th>Загальна площа (га)</th>
+        <th>%</th>
+    </tr>
+    {% for item in by_category %}
+    <tr>
+        <td class="col-width-800">{{ item.category }}</td>
+        <td>{{ item.count }}</td>
+        <td>{{ item.total_area|floatformat:2 }}</td>
+        <td>{{ item.percent|floatformat:1 }}%</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">Немає даних</td></tr>
+    {% endfor %}
+    {% if by_category %}
+    <tr class="table-total">
+        <td>Всього</td>
+        <td>{{ category_summary.total_count }}</td>
+        <td>{{ category_summary.total_area|floatformat:2 }}</td>
+        <td></td>
+    </tr>
+    {% endif %}
+</table>
+
+<!-- Таблиця за типом користування -->
+<h2>За типом користування</h2>
+<table class="table_analitic">
+    <tr>
+        <th>Тип користування</th>
+        <th>Кількість ділянок</th>
+        <th>Загальна площа (га)</th>
+        <th>%</th>
+    </tr>
+    {% for item in by_status %}
+    <tr>
+        <td class="col-width-800">{{ item.status }}</td>
+        <td>{{ item.count }}</td>
+        <td>{{ item.total_area|floatformat:2 }}</td>
+        <td>{{ item.percent|floatformat:1 }}%</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">Немає даних</td></tr>
+    {% endfor %}
+    {% if by_destination %}
+    <tr class="table-total">
+        <td>Всього</td>
+        <td>{{ status_summary.total_count }}</td>
+        <td>{{ status_summary.total_area|floatformat:2 }}</td>
+        <td></td>
+    </tr>
+    {% endif %}
+</table>
+    <div class="chart-container">
+        <h2 class="chart">Розподіл площі за типом користування</h2>
+        <canvas id="statusChart" class="chart-canvas"></canvas>
+    </div>
+
+<!-- Таблиця за угіддям -->
+<h2>За угіддям</h2>
+<table class="table_analitic">
+    <tr>
+        <th>Угіддя</th>
+        <th>Кількість ділянок</th>
+        <th>Загальна площа (га)</th>
+        <th>%</th>
+    </tr>
+    {% for item in by_land %}
+    <tr>
+        <td class="col-width-800">{{ item.land }}</td>
+        <td>{{ item.count }}</td>
+        <td>{{ item.total_area|floatformat:2 }}</td>
+        <td>{{ item.percent|floatformat:1 }}%</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">Немає даних</td></tr>
+    {% endfor %}
+    {% if by_destination %}
+    <tr class="table-total">
+        <td>Всього</td>
+        <td>{{ land_summary.total_count }}</td>
+        <td>{{ land_summary.total_area|floatformat:2 }}</td>
+        <td></td>
+    </tr>
+    {% endif %}
+</table>
+<div class="chart-container">
+    <h2 class="chart">Розподіл площі за типом угідь</h2>
+    <canvas id="landChart" class="chart-canvas"></canvas>
+</div>
+
+<!-- Цільове призначення -->
+<h2>За цільовим призначенням</h2>
+<table class="table_analitic">
+    <tr>
+        <th>Цільове призначення</th>
+        <th>Кількість ділянок</th>
+        <th>Загальна площа (га)</th>
+        <th>%</th>
+    </tr>
+    {% for item in by_destination %}
+    <tr>
+        <td class="col-width-800">{{ item.destination }}</td>
+        <td>{{ item.count }}</td>
+        <td>{{ item.total_area|floatformat:2 }}</td>
+        <td>{{ item.percent|floatformat:1 }}%</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">Немає даних</td></tr>
+    {% endfor %}
+    {% if by_destination %}
+    <tr class="table-total">
+        <td>Всього</td>
+        <td>{{ destination_summary.total_count }}</td>
+        <td>{{ destination_summary.total_area|floatformat:2 }}</td>
+        <td></td>
+    </tr>
+    {% endif %}
+</table>
+{% endif %}
+<!-- Додай таблиці для by_land_type, by_user, by_settlement -->
+
+
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+// Дані передаються з view через context
+const categoryLabels = {{ category_labels|safe }};
+const categoryData = {{ category_data|safe }};
+
+const statusLabels = {{ status_labels|safe }};
+const statusData = {{ status_data|safe }};
+
+const landLabels = {{ land_labels|safe }};
+const landData = {{ land_data|safe }};
+
+// Tableau Palette
+const tableauPalette = [
+    { background: 'rgba(31, 119, 180, 0.6)', border: 'rgba(31, 119, 180, 1)' },   // Синій
+    { background: 'rgba(255, 127, 14, 0.6)', border: 'rgba(255, 127, 14, 1)' },   // Помаранчевий
+    { background: 'rgba(44, 160, 44, 0.6)', border: 'rgba(44, 160, 44, 1)' },     // Зелений
+    { background: 'rgba(214, 39, 40, 0.6)', border: 'rgba(214, 39, 40, 1)' },     // Червоний
+    { background: 'rgba(148, 103, 189, 0.6)', border: 'rgba(148, 103, 189, 1)' }, // Фіолетовий
+    { background: 'rgba(140, 86, 75, 0.6)', border: 'rgba(140, 86, 75, 1)' },     // Коричневий
+    { background: 'rgba(227, 119, 194, 0.6)', border: 'rgba(227, 119, 194, 1)' }, // Рожевий
+    { background: 'rgba(127, 127, 127, 0.6)', border: 'rgba(127, 127, 127, 1)' }, // Сірий
+    { background: 'rgba(188, 189, 34, 0.6)', border: 'rgba(188, 189, 34, 1)' },   // Лайм
+    { background: 'rgba(23, 190, 207, 0.6)', border: 'rgba(23, 190, 207, 1)' },   // Бірюзовий
+    { background: 'rgba(174, 199, 232, 0.6)', border: 'rgba(174, 199, 232, 1)' }, // Світло-синій
+    { background: 'rgba(255, 187, 120, 0.6)', border: 'rgba(255, 187, 120, 1)' }  // Світло-помаранчевий
+];
+
+// Функція для створення графіка
+function createPieChart(ctxId, labels, data, title) {
+    const ctx = document.getElementById(ctxId).getContext('2d');
+
+    // Вибираємо кольори по кількості елементів
+    const colors = labels.map((_, i) => tableauPalette[i % tableauPalette.length]);
+
+    return new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors.map(c => c.background),
+                borderColor: colors.map(c => c.border),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'left',
+                    labels: {
+                        boxWidth: 20,
+                        padding: 10
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            let value = context.raw;
+                            let percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value.toLocaleString()} га (${percentage}%)`;
+                        }
+                    }
+                },
+                title: {
+                    display: false
+                }
+            },
+            layout: {
+                padding: 0
+            }
+        }
+    });
+}
+
+// Створюємо графіки
+createPieChart('categoryChart', categoryLabels, categoryData, 'Категорії');
+createPieChart('statusChart', statusLabels, statusData, 'Тип користування');
+createPieChart('landChart', landLabels, landData, 'Тип угідь');
+</script>
+{% endblock %}

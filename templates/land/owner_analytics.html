@@ -1,0 +1,87 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block main %}
+<div class="container mt-4">
+  <!-- 🔍 Форма фільтру -->
+<form method="get" class="mb-4">
+  <div class="row g-2">
+    <div class="col-md-3">
+      <input type="text" name="owner_name" value="{{ filters.owner_name }}" class="form-control"
+             placeholder="Введіть ім'я орендаря">
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="location" value="{{ filters.location }}" class="form-control"
+             placeholder="Населений пункт">
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn w-100">Фільтрувати</button>
+    </div>
+    <div class="col-md-2">
+      <a href="{% url 'owner_analytics' %}" class="btn w-100">Скинути фільтри</a>
+    </div>
+    <div class="col-md-2">
+      {% if has_filters %}
+      <a href="?owner_name={{ filters.owner_name }}&location={{ filters.location }}&status={{ filters.status }}&export=excel"
+         class="btn w-100">
+        Експорт у Excel
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+  <!-- 📊 Результати -->
+  {% if detailed_by_owner %}
+    {% for owner in detailed_by_owner %}
+      <h4 class="mt-3">{{ owner.owner_name }}</h4>
+      <table class="table_analitic">
+        <thead>
+          <tr>
+            <th>Населений пункт</th>
+            <th>Цільове призначення</th>
+            <th>Угіддя</th>
+            <th>Кількість ділянок</th>
+            <th>Загальна площа</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for loc in owner.locations %}
+            {% for dest in loc.destinations %}
+              {% for land in dest.lands %}
+                <tr>
+                  <td>{{ loc.location }}</td>
+                  <td>{{ dest.destination }}</td>
+                  <td>{{ land.land }}</td>
+                  <td>{{ land.total_plots }}</td>
+                  <td>{{ land.total_area }}</td>
+                  <td>{{ land.avg_interest|floatformat:2 }}</td>
+                </tr>
+              {% endfor %}
+
+            {% endfor %}
+            <!-- Підсумок по населеному пункту -->
+            <tr class="table-total">
+              <td colspan="3">Разом по {{ loc.location }}</td>
+              <td>{{ loc.total_plots }}</td>
+              <td>{{ loc.total_area }}</td>
+              <td>{{ loc.avg_interest|floatformat:2 }}</td>
+            </tr>
+          {% endfor %}
+          <!-- Підсумок по власнику -->
+          <tr class="grand-total">
+            <td colspan="3">Разом по {{ owner.owner_name }}</td>
+            <td>{{ owner.total_plots }}</td>
+            <td>{{ owner.total_area }}</td>
+            <td>{{ owner.avg_interest|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    {% endfor %}
+  {% else %}
+    <p class="text-center">
+      Немає даних для відображення. Виберіть користувача для перегляду аналітики.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+
+	<meta name="theme-color" content="#ff3333">
+    <title>Радіо плеєр</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: white;
+        }
+.flex {
+       display: flex;
+	   justify-content: center;
+}
+@media screen and (max-width: 500px) {
+    .flex {
+         display:inline;
+    }
+}
+
+        .player {
+			width: 300px;
+            background: #424344;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: inline-block;
+            color: white;
+        }
+        .stations {
+            display: none;
+            margin-top: 10px;
+        }
+
+         .btn-play {
+            background: #ff5757;
+            margin-top: 10px;
+			margin-left: 10px;
+            width: 200px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+ .station-btn {
+    margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #FFFDD0;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+	font-size: 16px;
+}
+
+.station-btn:hover {
+    background-color: #ddd;
+    transform: scale(1.05);
+}
+
+.station-btn.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#current-track { margin-top: 10px; font-style: italic; color: white; }
+.daily {
+    width: 1000px;
+	height: 25px;
+    margin: 20px auto;
+    padding: 15px;
+    border-radius: 10px;
+    background: #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    font-style: italic;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    color: #333;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+@media screen and (max-width: 500px) {
+       .daily {
+            width: 330px;
+            height: 50px;
+            margin: 10px auto;
+            padding: 5px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-style: italic;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: #333;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+}
+    </style>
+</head>
+
+<body>
+<div class="flex">
+<div class="player">
+    <h3 id="station-title">🎵 Оберіть станцію</h3>
+    <audio id="radio" controls style="width: 100%;"></audio><br><br>
+
+    <div class="volume-control">
+        <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5">
+    </div>
+
+    <button class="btn-play" id="toggle-play">▶️ Відтворити</button>
+
+    <div id="stations">
+		<button class="station-btn" data-url="http://online.hitfm.ua/HitFM" data-api="https://api.hitfm.ua/current">Хіт FM</button>
+        <button class="station-btn" data-url="http://icecast.luxnet.ua/radio24" data-api="https://api.hitfm.ua/current">Radio Maximum</button>
+		<button class="station-btn" data-url="http://217.20.173.105:8100/live" data-api="https://api.hitfm.ua/current">Europa FM</button>
+		<button class="station-btn" data-url="https://online.kissfm.ua/KissFM" data-api="https://api.hitfm.ua/current">Kiss FM</button>
+		<button class="station-btn" data-url="https://online.nasheradio.ua/NasheRadio" data-api="https://api.hitfm.ua/current">Наше Радіо</button>
+		<button class="station-btn" data-url="http://online.melodiafm.ua/MelodiaFM" data-api="https://api.hitfm.ua/current">Мелодія FM</button>
+		<button class="station-btn" data-url="https://online.radioroks.ua/RadioROKS" data-api="https://api.radioroks.ua/current">Radio Roks</button>
+    </div>
+</div>
+<div id="daily-quote" class="daily">
+</div>
+<img id="quoteImage" src="" alt="Цитата дня">
+</div>
+
+<script>
+const audio = document.getElementById("radio");
+const playBtn = document.getElementById("toggle-play");
+const stationTitle = document.getElementById("station-title");
+const volumeSlider = document.getElementById("volume-slider");
+const stationButtons = document.querySelectorAll(".station-btn");
+
+// Завантажуємо останню станцію і гучність
+const savedStation = localStorage.getItem("radio_station");
+const savedStationName = localStorage.getItem("radio_station_name");
+const savedVolume = parseFloat(localStorage.getItem("radio_volume") || 0.5);
+
+audio.volume = savedVolume;
+volumeSlider.value = savedVolume;
+
+if (savedStation && savedStationName) {
+    audio.src = savedStation;
+    stationTitle.textContent = `🔊 ${savedStationName}`;
+    highlightActive(savedStation);
+} else if (stationButtons.length > 0) {
+    audio.src = stationButtons[0].dataset.url;
+    stationTitle.textContent = `🎧 ${stationButtons[0].textContent}`;
+    stationButtons[0].classList.add('active');
+}
+
+// Гучність
+volumeSlider.addEventListener("input", () => {
+    audio.volume = parseFloat(volumeSlider.value);
+    localStorage.setItem("radio_volume", audio.volume);
+});
+
+// Play/Pause
+playBtn.addEventListener("click", () => {
+    if (audio.paused) {
+        audio.play();
+        playBtn.textContent = "⏸ Пауза";
+    } else {
+        audio.pause();
+        playBtn.textContent = "▶️ Відтворити";
+    }
+});
+
+// Вибір станції
+stationButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        audio.src = btn.dataset.url;
+        audio.play();
+        stationTitle.textContent = `🎧 ${btn.textContent}`;
+        localStorage.setItem("radio_station", btn.dataset.url);
+        localStorage.setItem("radio_station_name", btn.textContent);
+        playBtn.textContent = "⏸ Пауза";
+
+        highlightActive(btn.dataset.url);
+    });
+});
+
+// Підсвічує активну станцію
+function highlightActive(url) {
+    stationButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.url === url);
+    });
+}
+// Цитата дня
+const quotes = [
+    "Не бійся змін — вони ведуть до зростання.",
+    "Щодня роби хоч щось, що наближає тебе до мрії.",
+    "Успіх приходить до тих, хто діє, а не чекає.",
+    "Маленькі кроки створюють великі результати.",
+    "Будь добрим до себе та інших — це завжди повертається.",
+    "Завжди шукай щось, за що можна бути вдячним.",
+    "Сьогодні — ідеальний день, щоб почати.",
+    "Дій сьогодні, завтра може бути пізно.",
+    "Навчися радіти маленьким речам.",
+    "Твоя посмішка може змінити чиєсь життя.",
+    "Найскладніше — почати. Далі буде легше.",
+    "Не дозволяй страху зупинити твої мрії.",
+    "Пам’ятай: навіть повільний прогрес — це все ще прогрес.",
+    "Великі зміни починаються з маленьких рішень.",
+    "Вчися бачити можливості там, де інші бачать проблеми.",
+    "Кожен день — новий шанс зробити краще.",
+    "Довіра до себе — перший крок до успіху.",
+    "Хто йде повільно, той теж рухається вперед.",
+    "Доброта нічого не коштує, але багато дає.",
+    "Справжня сила — у спокої та впевненості.",
+    "Життя не потрібно чекати — його потрібно створювати.",
+    "Навіть у темряві зірки видно найкраще.",
+    "Не порівнюй — просто будь кращим, ніж учора.",
+    "Щастя — це не мета, а шлях, яким ти йдеш.",
+    "Іноді потрібно просто видихнути і продовжити.",
+    "Те, що сьогодні здається дрібницею, завтра може стати доленосним.",
+    "Дякуй за все — навіть за труднощі, бо вони вчать.",
+    "Ти сильніший, ніж думаєш.",
+    "Коли ніч здається безкінечною, пам’ятай — світанок уже близько.",
+    "Найкращий час посадити дерево був 20 років тому. Другий найкращий — сьогодні.",
+	"Мрій сміливо, працюй наполегливо, живи щасливо.",
+    "Кожна поразка — це урок, а не кінець.",
+    "Сонце завжди виходить після дощу.",
+    "Не шукай ідеального моменту — створи його.",
+    "Іноді треба зробити паузу, щоб відчути життя.",
+    "Твоя енергія притягує те, про що ти думаєш.",
+    "Щирість — це розкіш, яку варто собі дозволяти.",
+    "Зміни починаються тоді, коли перестаєш чекати.",
+    "Якщо не можеш змінити ситуацію — зміни своє ставлення.",
+    "Навіть найдовша дорога починається з першого кроку.",
+    "Краще зробити й пошкодувати, ніж не зробити й шкодувати все життя.",
+    "Будь світлом, навіть коли навколо темрява.",
+    "Не озирайся — ти не туди йдеш.",
+    "Живи так, щоб кожен день мав сенс.",
+    "Коли серце спокійне — розум ясний.",
+    "Пробачай швидше, люби глибше, живи простіше.",
+    "Відпусти те, що тебе тягне вниз.",
+    "Смійся частіше — це додає життя.",
+    "Не чекай натхнення — створи його.",
+    "Ти не зобов’язаний бути ідеальним, щоб бути щасливим.",
+    "Найбільша перемога — це перемога над собою.",
+    "Не втрачай віри навіть тоді, коли шлях не видно.",
+    "Усе має свій час. Навіть дива.",
+    "Пам’ятай, що ти вже пройшов багато. І це теж твоя сила.",
+    "Живи в гармонії із собою — і все інше стане на місце.",
+    "Світ відображає те, що ти випромінюєш.",
+    "Хороші думки приносять хороші дні.",
+    "Справжня мудрість — у простоті.",
+    "Не потрібно багато, щоб бути щасливим. Потрібно просто бути вдячним.",
+    "Сьогодні — це подарунок. Саме тому він називається «тепер»."
+];
+
+// Випадкова цитата
+const randomIndex = Math.floor(Math.random() * quotes.length);
+const quoteEl = document.getElementById("daily-quote");
+quoteEl.textContent = quotes[randomIndex];
+
+// Плавне появлення цитати
+setTimeout(() => {
+    quoteEl.style.opacity = 1;
+}, 100);
+
+// Функція для випадкової картинки
+function randomImage() {
+    const img = document.getElementById('quoteImage');
+    img.style.opacity = 0;
+    // Теми
+    const themes = ['motivation', 'flowers', 'nature', 'sky'];
+    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+    // Використовуємо Picsum Photos і підставляємо тему у seed (щоб різні теми давали різні картинки)
+    const url = `https://picsum.photos/800/400?random=${Math.floor(Math.random() * 1000)}&seed=${randomTheme}`;
+    img.onload = () => img.style.opacity = 1;
+    img.src = url;
+}
+
+// Викликаємо одразу при завантаженні
+randomImage();
+// Плавне появлення
+setTimeout(() => {
+    quoteEl.style.opacity = 1;
+}, 100);
+</script>
+</body>
+</html>

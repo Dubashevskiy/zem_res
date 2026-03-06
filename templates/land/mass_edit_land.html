@@ -1,0 +1,290 @@
+{% extends 'layout.html' %}
+{% load widget_tweaks %}
+{% block main %}
+
+
+
+
+<div>
+
+<div>
+
+<form method="post">
+        {% csrf_token %}
+                <!-- Масове редагування -->
+<div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="mb-2">
+            <button type="button" id="select-all" class="btn btn-sm btn-secondary">Вибрати всі</button>
+            <button type="button" id="deselect-all" class="btn btn-sm btn-outline-secondary">Зняти всі</button>
+        </div>
+        <h3 class="fs-4 fst-italic align-items-center">Масове редагування ділянок</h3>
+            <button class="btn mt-3 me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterCanvas">
+                Фільтр
+            </button>
+    </div>
+<div class="row g-3 align-items-end mb-3">
+
+  <!-- Новий власник -->
+  <div class="col">
+    <label for="new_owner_name" class="form-label">Новий власник:</label>
+    <input type="text" name="new_owner_name" id="new_owner_name" class="form-control">
+  </div>
+
+  <!-- Статус -->
+  <div class="col">
+    <label for="status" class="form-label">Статус права:</label>
+    <select name="status" id="status" class="form-select">
+      <option value="">-- Не змінювати --</option>
+      {% for key, value in status_choices %}
+        <option value="{{ key }}">{{ value }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Цільове призначення -->
+  <div class="col">
+    <label for="destination" class="form-label">Цільове призначення:</label>
+    <select name="destination" id="destination" class="form-select">
+      <option value="">-- Не змінювати --</option>
+      {% for key, value in destination_choices %}
+        <option value="{{ key }}">{{ value }}</option>
+      {% endfor %}
+    </select>
+  </div>
+    </div>
+    <div class="row g-3 align-items-end mb-3">
+       <!-- Відсоток -->
+  <div class="col">
+    <label for="interest" class="form-label">Відсоток:</label>
+    <input type="number" step="0.01" min="0.01" name="interest" id="interest" class="form-control">
+  </div>
+    <!-- Номер рішення -->
+  <div class="col">
+    <label for="decision_number" class="form-label">Номер рішення:</label>
+    <input type="text" name="decision_number" id="decision_number" class="form-control">
+  </div>
+
+  <!-- Дата рішення -->
+  <div class="col">
+    <label for="decision_date" class="form-label">Дата рішення:</label>
+    <input type="date" name="decision_date" id="decision_date" class="form-control">
+  </div>
+    <div class="col">
+    <label for="date_assessment" class="form-label">Рік розрахунку НГО:</label>
+    <input type="number" name="date_assessment" id="date_assessment" class="form-control">
+  </div>
+  <div class="col">
+    <label for="rent_start" class="form-label">Початок оренди:</label>
+    <input type="date" name="rent_start" id="rent_start" class="form-control">
+  </div>
+    <div class="col">
+    <label for="rent_end" class="form-label">Кінець оренди:</label>
+    <input type="date" name="rent_end" id="rent_end" class="form-control">
+  </div>
+     <div class="col">
+    <label for="registered" class="form-label">зареєстровано в РРП:</label>
+    <select name="registered" id="registered" class="form-select">
+      <option value="">-- Не змінювати --</option>
+      {% for key, value in register_choices %}
+        <option value="{{ key }}">{{ value }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+
+  <!-- Кнопка -->
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Застосувати</button>
+  </div>
+    </div>
+
+</div>
+
+        <!-- Таблиця ділянок -->
+        <div class="table-wrapper-mass-edit">
+            <table class="tables clickable-table">
+                <thead>
+                    <tr class="table-heat">
+                        <th>Вибір</th>
+                        <th>Кадастровий номер</th>
+                        <th>Власник</th>
+                        <th>Площа</th>
+                        <th>Населений пункт</th>
+                        <th></th>
+                        <th >Цільове призначення</th>
+                        <th>Відсоток</th>
+                        <th>Номер рішення</th>
+                        <th>Дата рішення</th>
+                        <th>Початок оренди</th>
+                        <th>Кінець оренди</th>
+                        <th>ДРРП</th>
+                        <th>Рік НГО</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lease in leases %}
+                    <tr class="table-heat">
+                        <td><input type="checkbox" name="selected_ids" value="{{ lease.id }}" class="lease-checkbox align-middle"></td>
+                        <td>{{ lease.cadastr_number }}</td>
+                        <td>{{ lease.owner_name }}</td>
+                        <td>{{ lease.area }}</td>
+                        <td>{{ lease.location }}</td>
+                        <td>{{ lease.get_status_display }}</td>
+                        <td>{{ lease.get_destination_display }}</td>
+                        <td>{{ lease.interest }}</td>
+                        <td>{{ lease.decision_number }}</td>
+                        <td>{{ lease.decision_date|date:"d.m.Y" }}</td>
+                        <td>{{ lease.rent_start|date:"d.m.Y" }}</td>
+                        <td>{{ lease.rent_end|date:"d.m.Y" }}</td>
+                        <td>{{ lease.get_registered_display }}</td>
+                        <td>{{ lease.date_assessment }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">Немає ділянок для відображення</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+            <!-- Фільтр -->
+        <div class="filters" tabindex="-1" id="filterCanvas" aria-labelledby="filterSidebarLabel">
+            <div class="filter-header border-bottom">
+            <h5 class="offcanvas-title " id="filterSidebarLabel">Фільтр</h5>
+          </div>
+         <div class="filter-body">
+            <form id="filter-form" method="get" class="row">
+                 <h6>Земельна ділянка</h6>
+                 <hr style="border: 1px solid black">
+                 <div class="col-md-12">
+                    {{ filter.form.cadastr_number.label_tag }}
+                    <input id="id_cadastr_number" name="cadastr_number" type="text" class="form-control border-primary-subtle" value="{{ request.GET.cadastr_number }}">
+                </div>
+                 <div class="col-md-12">
+                    {{ filter.form.location.label_tag }}
+                     <input id="id_location" name="location" type="text" class="form-control border-primary-subtle" value="{{ request.GET.location }}">
+                </div>
+                 <div class="col-md-12">
+                     {{ filter.form.category.label_tag }}
+                    {{ filter.form.category }}
+                </div>
+                 <div class="col-md-9">
+                     {{ filter.form.destination.label_tag }}
+                    {{ filter.form.destination }}
+                     {{ filter.form.land.label_tag }}
+                    {{ filter.form.land }}
+                </div>
+                 <div class="col-md-3">
+                    {{ filter.form.area.label_tag }}
+                    {{ filter.form.area }}
+                </div>
+                 <h6 class="mt-2">Користування</h6>
+                 <hr style="border: 1px solid black">
+                 <div class="col-md-6 ">
+                     {{ filter.form.owner_name.label_tag }}
+                     {{ filter.form.owner_name }}
+                 </div>
+                 <div class="col-md-6 ">
+                     {{ filter.form.sub_owner_name.label_tag }}
+                     {{ filter.form.sub_owner_name }}
+                 </div>
+                 <div class="col-md-4">
+                    <label>Відсоток</label>
+                    <div class="input-group">
+                        {{ filter.form.interest }}
+                    </div>
+                </div>
+                 <div class="col-md-4">
+                    <label>Дата реєстрації</label>
+                    <div class="input-group">
+                        {{ filter.form.rent_start}}
+                    </div>
+                </div>
+                 <div class="col-md-4">
+                    <label>Термін дії</label>
+                    <div class="input-group">
+                        {{ filter.form.rent_end }}
+                    </div>
+                </div>
+                 <h6 class="mt-2">Рішення</h6>
+                 <hr style="border: 1px solid black">
+                 <div class="col-md-6">
+                    <label>Дата рішення</label>
+                    <div class="input-group">
+                        {{ filter.form.decision_date }}
+                    </div>
+                </div>
+                 <div class="col-md-6">
+                    {{ filter.form.decision_number.label_tag }}
+                    {{ filter.form.decision_number }}
+                </div>
+                <h6 class="mt-2">Нормативна оцінка</h6>
+                <div class="col-md-3">
+                    {{ filter.form.assess_filter.label_tag }}
+                    {{ filter.form.assess_filter }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter.form.date_assessment.label_tag }}
+                    {{ filter.form.date_assessment }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter.form.date_assess_filter.label_tag }}
+                    {{ filter.form.date_assess_filter }}
+                </div>
+                 <div class="col-12 mt-3">
+                    <button type="submit" class="btn me-2">Застосувати</button>
+                    <a href="{% url 'mass_edit_land' %}" class="btn">Очистити</a>
+                </div>
+            </form>
+        </div>
+       </div>
+
+    </div>
+
+    <!-- Пагінація -->
+{% with query_params=request.GET.urlencode %}
+<div class="pagination ">
+    <ul class="pagination justify-content-center ">
+        {% if page_obj.has_previous %}
+            <li class="page-item backcolors">
+                <a class="page-link" href="?{{ query_params }}&page=1">« Перша</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.previous_page_number }}">‹ Назад</a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?{{ query_params }}&page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.next_page_number }}">Вперед ›</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.paginator.num_pages }}">Остання »</a>
+            </li>
+        {% endif %}
+    </ul>
+</div>
+{% endwith %}
+</div>
+<script>
+document.getElementById('select-all').addEventListener('click', function() {
+    document.querySelectorAll('.lease-checkbox').forEach(cb => cb.checked = true);
+});
+
+document.getElementById('deselect-all').addEventListener('click', function() {
+    document.querySelectorAll('.lease-checkbox').forEach(cb => cb.checked = false);
+});
+</script>
+{% endblock %}
