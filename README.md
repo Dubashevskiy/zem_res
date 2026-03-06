@@ -34,8 +34,11 @@ The system allows users to:
 - manage users and permissions
 
 ## Screenshots
+<img width="1898" height="770" alt="map" src="https://github.com/user-attachments/assets/b480e198-e63a-44e5-95a7-b432d71ab54d" />
+<img width="1909" height="953" alt="filter" src="https://github.com/user-attachments/assets/c27d253c-3ff5-46c0-a687-023115319366" />
+<img width="1907" height="963" alt="analityk" src="https://github.com/user-attachments/assets/2afc2c55-d622-4446-bfb1-8ca64a2ab937" />
+<img width="1907" height="955" alt="add" src="https://github.com/user-attachments/assets/9cc9a318-74a6-4fae-bc25-778082485380" />
 
-(Add screenshots here)
 
 ## Installation
 
